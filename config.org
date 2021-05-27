@@ -49,6 +49,47 @@
 ;; - `add-load-path!' for adding directories to the `load-path', relative to
 ;;  .
 #+end_src
+* UI
+
+
+** Theme
+
+   NANO
+
+   #+begin_src emacs-lisp :tangle no
+(defvar nano-theme-light-var t)
+(require 'disp-table)
+(require 'nano-theme-dark)
+(require 'nano-theme-light)
+(nano-theme-set-light)
+;(require 'nano-layout)
+;(require 'nano-base-colors)
+(require 'nano-faces)
+(nano-faces)
+(require 'nano-theme)
+(nano-theme)
+(require 'nano-modeline)
+;(require 'nano-writer)
+;;(nano-theme)
+;;
+
+(defun nano-change-theme-dark ()
+  (interactive)
+  (nano-theme-set-dark)
+  (nano-faces)
+  (nano-theme))
+
+(defun nano-change-theme-light ()
+  (interactive)
+  (nano-theme-set-light)
+  (nano-faces)
+  (nano-theme))
+
+(defun nano-change-theme ()
+  (interactive)
+  (if nano-theme-light-var (nano-change-theme-dark) (nano-change-theme-light))
+  (setq nano-theme-light-var (not nano-theme-light-var)))
+   #+end_src
 
 I always want this, regardless of whether I am uisng nano or not.
 
