@@ -1,7 +1,10 @@
-#+TITLE: Config
+#+title:doom-emacs config
+* Basic stuff
 
-#+BEGIN_SOURCE emacs-lisp :tangle yes
 
+  Yooooooooooo let's go
+
+#+BEGIN_SRC emacs-lisp :tangle yes
 ;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
 
 ;; Place your private configuration here! Remember, you do not need to run 'doom
@@ -13,23 +16,9 @@
 (setq user-full-name "Thomas F. K. Jorna"
       user-mail-address "jorna@jtrialerror.com")
 
-;; Doom exposes five (optional) variables for controlling fonts in Doom. Here
-;; are the three important ones:
-;;
-;; + `doom-font'
-;; + `doom-variable-pitch-font'
-;; + `doom-big-font' -- used for `doom-big-font-mode'; use this for
-;;   presentations or streaming.
-;;
-;; They all accept either a font-spec, font string ("Input Mono-12"), or xlfd
-;; font string. You generally only need these two:
- (setq doom-font (font-spec :family "Fira Code" :size 14 :weight 'semi-light)
-       doom-variable-pitch-font (font-spec :family "Noto Serif" :size 16))
-
-;; There are two ways to load a theme. Both assume the theme is installed and
-;; available. You can either set `doom-theme' or manually load a theme with the
-;; `load-theme' function. This is the default:
-(setq doom-theme 'doom-gruvbox)
+#+end_src
+** ...
+#+begin_src emacs-lisp :tangle yes
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
@@ -58,34 +47,12 @@
 ;; - `use-package!' for configuring packages
 ;; - `after!' for running code after a package has loaded
 ;; - `add-load-path!' for adding directories to the `load-path', relative to
-;;   this file. Emacs searches the `load-path' when you load packages with
-;;   `require' or `use-package'.
-;; - `map!' for binding new keys
-;;
-;; To get information about any of these functions/macros, move the cursor over
-;; the highlighted symbol at press 'K' (non-evil users must press 'C-c c k').
-;; This will open documentation for it, including demos of how they are used.
-;;
-;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
-;; they are implemented.
+;;  .
+#+end_src
 
+I always want this, regardless of whether I am uisng nano or not.
 
-(defvar nano-theme-light-var t)
-(require 'disp-table)
-;(require 'nano-theme-dark)
-;(require 'nano-theme-light)
-;(nano-theme-set-light)
-;(require 'nano-layout)
-;(require 'nano-base-colors)
-(require 'nano-faces)
-(nano-faces)
-;(require 'nano-theme)
-;(nano-theme)
-(require 'nano-modeline)
-;(require 'nano-writer)
-;;(nano-theme)
-;;
-
+#+begin_src emacs-lisp :tangle yes
 (setq default-frame-alist
       (append (list
 	       ;; '(font . "Roboto Mono Emacs Regular:size=14")
@@ -100,25 +67,7 @@
 
 
 
-(defun nano-change-theme-dark ()
-  (interactive)
-  (nano-theme-set-dark)
-  (nano-faces)
-  (nano-theme))
 
-(defun nano-change-theme-light ()
-  (interactive)
-  (nano-theme-set-light)
-  (nano-faces)
-  (nano-theme))
-
-(defun nano-change-theme ()
-  (interactive)
-  (if nano-theme-light-var (nano-change-theme-dark) (nano-change-theme-light))
-  (setq nano-theme-light-var (not nano-theme-light-var)))
-
-(defvar +org-roam-open-buffer-on-find-file t
-  "If non-nil, open the org-roam buffer when opening an org roam file.")
 
 
 ;  (setq centaur-tabs-style "wave")
@@ -130,16 +79,224 @@
 
 ;;
 ;;; Packages
+#+end_src
+
+I'm either using nano or doom-theme, this is the latter
+#+begin_src emacs-lisp :tangle yes
+(setq doom-theme 'doom-plain)
+#+end_src
+** Fonts
+
+#+begin_src emacs-lisp :tangle yes
+(use-package! mixed-pitch
+  :hook (org-mode . mixed-pitch-mode)
+  :config
+  (setq mixed-pitch-face 'variable-pitch))
+#+end_src
+
+#+begin_src emacs-lisp :tangle yes
+(setq doom-font (font-spec :family "Fira Code" :size 15 :weight 'semi-light)
+       doom-variable-pitch-font (font-spec :family "Noto Serif" :style "Regular" :size 18 :weight 'regular))
+
+(use-package! mixed-pitch
+  :hook (org-mode . mixed-pitch-mode)
+  :config
+  (setq mixed-pitch-set-heigth t)
+  (set-face-attribute 'variable-pitch nil :height 1.3 :family "Noto Serif" :weight 'regular))
+;; There are two ways to load a theme. Both assume the theme is installed and
+;; available. You an either set `doom-theme' or manually load a theme with the
+;; `load-theme' function. This is the default:
+
+#+end_src
+
+** Modeline
+#+begin_src emacs-lisp :tangle yes
+(defvar +modeline--old-bar-height nil)
+;;;###autoload
+(defun +modeline-resize-for-font-h ()
+  "Adjust the modeline's height when the font size is changed by
+`doom/increase-font-size' or `doom/decrease-font-size'.
+
+Meant for `doom-change-font-size-hook'."
+  (unless +modeline--old-bar-height
+    (setq +modeline--old-bar-height doom-modeline-height))
+  (let ((default-height +modeline--old-bar-height)
+        (scale (or (frameparameter nil 'font-scale) 0)))
+    (setq doom-modeline-height
+          (if (> scale 0)
+              (+ default-height (* scale doom-font-increment))
+            default-height))))
+
+;;;###autoload
+(defun +modeline-update-env-in-all-windows-h (&rest _)
+  "Update version strings in all buffers."
+  (dolist (window (window-list))
+    (with-selected-window window
+      (when (fboundp 'doom-modeline-update-env)
+        (doom-modeline-update-env))
+      (force-mode-line-update))))
+
+;;;###autoload
+(defun +modeline-clear-env-in-all-windows-h (&rest _)
+  "Blank out version strings in all buffers."
+  (unless (featurep! +light)
+    (dolist (buffer (buffer-list))
+      (with-current-buffer buffer
+        (setq doom-modeline-env--version
+              (bound-and-true-p doom-modeline-load-string)))))
+  (force-mode-line-update t))
+
+(use-package! doom-modeline
+  :hook (after-init . doom-modeline-mode)
+  :hook (doom-modeline-mode . size-indication-mode) ; filesize in modeline
+  :hook (doom-modeline-mode . column-number-mode)   ; cursor column in modeline
+  :init
+  (unless after-init-time
+    ;; prevent flash of unstyled modeline at startup
+    (setq-default mode-line-format nil))
+  ;; We display project info in the modeline ourselves
+  (setq projectile-dynamic-mode-line nil)
+  ;; Set these early so they don't trigger variable watchers
+  (setq doom-modeline-bar-width 3
+        doom-modeline-github nil
+        doom-modeline-mu4e nil
+        doom-modeline-persp-name nil
+        doom-modeline-minor-modes nil
+        doom-modeline-major-mode-icon nil
+        doom-modeline-buffer-file-name-style 'relative-from-project
+        ;; Only show file encoding if it's non-UTF-8 and different line endings
+        ;; than the current OSes preference
+        doom-modeline-buffer-encoding 'nondefault
+        doom-modeline-default-eol-type
+        (cond (IS-MAC 2)
+              (IS-WINDOWS 1)
+              (0)))
+
+  ;; Fix modeline icons in daemon-spawned graphical frames. We have our own
+  ;; mechanism for disabling all-the-icons, so we don't need doom-modeline to do
+  ;; it for us. However, this may cause unwanted padding in the modeline in
+  ;; daemon-spawned terminal frames. If it bothers you, you may prefer
+  ;; `doom-modeline-icon' set to `nil'.
+  (when (daemonp)
+    (setq doom-modeline-icon t))
+  :config
+  ;; HACK Fix #4102 due to empty all-the-icons return value (caused by
+  ;;      `doom--disable-all-the-icons-in-tty-a' advice) in tty daemon frames.
+  (defadvice! +modeline-disable-icon-in-daemon-a (orig-fn &rest args)
+    :around #'doom-modeline-propertize-icon
+    (when (display-graphic-p)
+      (apply orig-fn args)))
+
+  ;; Fix an issue where these two variables aren't defined in TTY Emacs on MacOS
+  (defvar mouse-wheel-down-event nil)
+  (defvar mouse-wheel-up-event nil)
+
+  (add-hook 'after-setting-font-hook #'+modeline-resize-for-font-h)
+  (add-hook 'doom-load-theme-hook #'doom-modeline-refresh-bars)
+
+  (add-hook '+doom-dashboard-mode-hook #'doom-modeline-set-project-modeline)
+
+  (add-hook! 'magit-mode-hook
+    (defun +modeline-hide-in-non-status-buffer-h ()
+      "Show minimal modeline in magit-status buffer, no modeline elsewhere."
+      (if (eq major-mode 'magit-status-mode)
+          (doom-modeline-set-vcs-modeline)
+        (hide-mode-line-mode))))
+
+  ;; Some functions modify the buffer, causing the modeline to show a false
+  ;; modified state, so force them to behave.
+  (defadvice! +modeline--inhibit-modification-hooks-a (orig-fn &rest args)
+    :around #'ws-butler-after-save
+    (with-silent-modifications (apply orig-fn args))))
+
+#+end_src
+
+#+begin_src emacs-lisp :tangle no
+(defun doom-modeline--set-char-widths (alist)
+  "Set correct widths of icons characters in ALIST."
+  (while (char-table-parent char-width-table)
+    (setq char-width-table (char-table-parent char-width-table)))
+  (dolist (pair alist)
+    (let ((width 1)
+          (chars (cdr pair))
+          (table (make-char-table nil)))
+      (dolist (char chars)
+        (set-char-table-range table char width))
+      (optimize-char-table table)
+      (set-char-table-parent table char-width-table)
+      (setq char-width-table table))))
+
+#+end_src
+*** Doom-modeline settings
+
+#+begin_src elisp :tangle yes
+(after! doom-modeline
+  (setq doom-modeline-enable-word-count t
+        doom-modeline-header-line t
+        ;doom-modeline-hud nil
+        doom-themes-padded-modeline t
+        doom-flatwhite-brighter-modeline nil
+        doom-plain-brighter-modeline nil))
+(add-hook! 'doom-modeline-mode-hook
+           (progn
+  (set-face-attribute 'header-line nil
+                      :background (face-background 'mode-line)
+                      :foreground (face-foreground 'mode-line))
+  ))
+#+end_src
+
+Trying to make my own thing work
+#+begin_src emacs-lisp :tangle no
+(after! doom-modeline
+  (doom-modeline-def-modeline 'main
+    '(bar matches buffer-info vcs word-count)
+    '(buffer-position misc-info major-mode "                  "))
+  (custom-set-faces! '(mode-line :family "Fira Code"))
+  (doom-modeline--set-char-widths doom-modeline-rhs-icons-alist))
+
+#+end_src
+
+*** Mlscroll
+
+    Very cool indicator of where you are in the buffer. Works not that well with `doom-modeline` though.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package! mlscroll
+  :init
+  (setq mlscroll-right-align nil)
+  (add-to-list 'mode-line-misc-info '(:eval (mlscroll-mode-line)) 'append)
+  (setq mlscroll-width-chars 15)
+  (setq mlscroll-border 6)
+  :config
+  (mlscroll-mode 1))
+  #+end_src
+
+  #+RESULTS:
+  : t
+
+
+
+* Org-Mode customization
+
+** ZETTELKASTEN
+#+begin_src emacs-lisp :tangle yes
 
 
 (use-package! org-fragtog
-  :hook (org-load . org-fragtog-mode)
+  :after org
+  :hook (org-mode . org-fragtog-mode)
   )
 
 (use-package! org-transclusion
   :after org-roam
   )
 
+#+end_src
+
+** Org-roam
+#+begin_src emacs-lisp :tangle yes
+        (defvar +org-roam-open-buffer-on-find-file nil
+  "If non-nil, open the org-roam buffer when opening an org roam file.")
 (use-package! org-roam
   ;;:hook (org-load . org-roam-mode)
   :hook (org-roam-backlinks-mode . turn-on-visual-line-mode)
@@ -213,11 +370,39 @@
   ;; makes it easier to distinguish from other org buffers.
   (add-hook 'org-roam-buffer-prepare-hook #'hide-mode-line-mode))
 
+#+end_src
+
+*** Org-roam-capture templates
+
+#+begin_src emacs-lisp :tangle yes
+(after! org-roam
+    (setq org-roam-capture-templates
+          `(("s" "standard" plain (function org-roam--capture-get-point)
+     "%?"
+     :file-name "%<%Y%m%d%H%M%S>-${slug}"
+     :head "#+title: ${title}\n#+roam_tags: \n\n* ${title}\n\n"
+     :unnarrowed t)
+        ("d" "definition" plain (function org-roam--capture-get-point)
+         "%?"
+         :file-name "${slug}"
+         :head "#+title: ${title}\n#+roam_tags: definition \n\n* ${title}\n\n\n* Examples\n"
+         :unnarrowed t)))
+  )
+
+#+end_src
+
+*** Server
+**** Protocol
+#+begin_src emacs-lisp :tangle yes
 
 ;; Since the org module lazy loads org-protocol (waits until an org URL is
 ;; detected), we can safely chain `org-roam-protocol' to it.
 (use-package! org-roam-protocol
   :after org-protocol)
+#+end_src
+
+**** Actual server
+#+begin_src emacs-lisp :tangle yes
 
 (use-package! org-roam-server
   :after org-roam
@@ -233,13 +418,16 @@
         org-roam-server-network-label-truncate t
         org-roam-server-network-label-truncate-length 60
         org-roam-server-network-label-wrap-length 20
-        org-roam-server-network-vis-options "{\"physics\": {\"stabilization: {\"iterations\": 10}\"}"
-        ;;"{\"physics\": {\"enabled\": true, \"barnesHut\":{\"gravitationalConstant\" : -6000, \"avoidOverlap\" : 0.5, \"springLength\" : 200}, \"stabilization\": {\"enabled\": true, \"iterations\": 30}},
+        org-roam-server-network-vis-options "{\"physics\": {\"stabilization\": {\"iterations\": 100}}}"
+        ;i;"{\"physics\": {\"enabled\": true, \"barnesHut\":{\"gravitationalConstant\" : -6000, \"avoidOverlap\" : 0.5, \"springLength\" : 200}, \"stabilization\": {\"enabled\": true, \"iterations\": 30}},
         ;;\"edges\": {\"physics\": true, \"hidden\": false, \"smooth\": {\"enabled\": false, \"type\": \"continuous\"}}}"
-        org-roam-server-cite-edge-dashes t
+        org-roam-server-cite-edge-dashes nil
         org-roam-server-extra-cite-edge-options (list (cons 'width 3))
         ))
+#+end_src
 
+Org-roam server does not really work well with with `smart-parens` for some reason, this fixes that.
+#+begin_src emacs-lisp :tangle yes
 (defun org-roam-server-open ()
     "Ensure the server is active, then open the roam graph."
     (interactive)
@@ -253,8 +441,10 @@
   (smartparens-global-mode -1)
   (org-roam-server-mode)
   (smartparens-global-mode 1))
+#+end_src
 
-
+*** Citations
+#+begin_src emacs-lisp :tangle yes
 (use-package! org-ref
     ;:after org-roam
     :config
@@ -292,10 +482,19 @@
  )
 )
 
-(use-package! company-org-roam
+#+end_src
+
+Company-org-roam seemed like a good idea, but I never use it.
+
+#+begin_src emacs-lisp :tangle no
+        (use-package! company-org-roam
   :after org-roam
   :config
   (set-company-backend! 'org-mode '(company-org-roam company-yasnippet company-dabbrev)))
+#+end_src
+
+ORB
+#+begin_src emacs-lisp :tangle yes
 
 (use-package! org-roam-bibtex
   :after org-roam
@@ -315,8 +514,12 @@
 \n\n\n* Rough note space\n"
            :unnarrowed t))))
 ;)
+#+end_src
+** To do things with pdfs with
 
-(use-package! org-noter
+   Don't really use this anymore since zotero got a pdf reader
+#+begin_src emacs-lisp :tangle yes
+   (use-package! org-noter
   :after (:any org pdf-view)
   :config
   (setq
@@ -338,42 +541,182 @@
   :after org-noter
   :config
   (with-eval-after-load 'pdf-annot
-    (add-hook 'pdf-annot-activate-handler-functions#'org-noter-pdftools-jump-to-note)))
+    (add-hook 'pdf-annot-activate-handler-functions #'org-noter-pdftools-jump-to-note)))
 
 
+#+end_src
 
-;;;;;;;;;;; Fix latex background
-;;;;;;;;;;;
-;
-
-  (defun +org-update-latex-preview-background-color (&rest _)
-(interactive)
-    (setq-default
-     org-format-latex-options
-     (plist-put org-format-latex-options
-                :background
-                (face-attribute (or (cadr (assq 'default face-remapping-alist))
-                                    'default)
-                                :background nil t))))
-  ;(advice-add #'load-theme :after #'+org-update-latex-preview-background-color)
-
-;;(add-hook 'solaire-mode-hook #'+org-update-latex-preview-background-color)
-
-;(use-package!
-;    :after
-;    :hook
-;    :init
-;    :config
-;    )
+nroam puts the org-roam buffer on the bottom, much more natural and less obstrustive, but not does cause some problems.
+#+begin_src emacs-lisp :tangle yes
+        (use-package! nroam
+  :after org-roam
+  :config
+  (add-hook 'org-roam-mode-hook  #'nroam-setup-maybe)
+)
 
 
-;(use-package!
-;    :after
-;    :hook
-;    :init
-;    :config
-;    )
+#+end_src
 
+*** Org-ol
+
+    Outliners on the side, neat.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package! org-ol-tree
+  :after org
+  :commands org-ol-tree
+  :hook (org-ol-tree-mode . visual-line-mode)
+  :config
+  (setq org-ol-tree-ui-window-auto-resize nil
+        org-ol-tree-ui-window-max-width 0.3
+        org-ol-tree-ui-window-position 'left))
+(map! :map org-mode-map
+      :after org
+      :localleader
+      :desc "Outline" "O" #'org-ol-tree)
+#+end_src
+** Hooks
+
+#+begin_src emacs-lisp :tangle yes
+;;; Ugly org hooks
+(defun nicer-org ()
+  (+org-pretty-mode 1)
+  (mixed-pitch-mode 1)
+  (hl-line-mode -1)
+  (display-line-numbers-mode -1)
+  (olivetti-mode 1)
+  (org-num-mode 1)
+  ;(org-indent-mode -1)
+  )
+
+(add-hook! 'org-mode-hook  #'nicer-org)
+
+#+end_src
+
+*** Here I put everything I don't know where to put
+
+#+begin_src emacs-lisp :tangle yes
+
+
+(after! org
+  (setq org-startup-with-latex-preview 1
+        org-startup-with-inline-images 1
+        org-hide-leading-stars 1
+        org-startup-indented nil
+        org-superstar-headline-bullets-list`("\u200b")
+  ;      org-startup-folded nil
+        ;org-startup-numerated 1
+        org-pretty-entities 1)
+  (custom-set-faces!
+  '((org-block) :background nil)
+  )
+  (defface redd
+    '((((class color) (min-colors 88) (background light))
+      :foreground "red"))
+    "Red."
+    :group 'basic-faces)
+  (custom-set-faces! '(org-level-1 :height 1.6 :weight bold :slant normal) '(org-level-2 :height 1.4 :weight regular :slant normal) '(org-level-3 :height 1.3 :weight regular :slant italic))
+  (setq org-emphasis-alist
+        '(("*" (bold))
+          ("/" italic)
+          ("_" underline)
+          ("=" redd)
+          ("~" (:background "deep sky blue" :foreground "MidnightBlue"))
+          ("+" (:strike-through t))))
+  (setq org-ellipsis " ▾ ")
+  (appendq! +ligatures-extra-symbols
+          `(:checkbox      "☐"
+            :pending       "◼"
+            :checkedbox    "☑"
+            :list_property "∷"
+            :em_dash       "—"
+            :ellipses      "…"
+            :arrow_right   "→"
+            :arrow_left    "←"
+            :title         "𝙏"
+            :subtitle      "𝙩"
+            :author        "𝘼"
+            :date          "𝘿"
+            :property      "☸"
+            :options       "⌥"
+            :startup       "⏻"
+            :macro         "𝓜"
+            :html_head     "🅷"
+            :html          "🅗"
+            :latex_class   "🄻"
+            :latex_header  "🅻"
+            :beamer_header "🅑"
+            :latex         "🅛"
+            :attr_latex    "🄛"
+            :attr_html     "🄗"
+            :attr_org      "⒪"
+            :begin_quote   "❝"
+            :end_quote     "❞"
+            :caption       "☰"
+            :header        "›"
+            :results       "🠶"
+            :begin_export  "⏩"
+            :end_export    "⏪"
+            :properties    "⚙"
+            :end           "∎"
+            :priority_a   ,(propertize "⚑" 'face 'all-the-icons-red)
+            :priority_b   ,(propertize "⬆" 'face 'all-the-icons-orange)
+            :priority_c   ,(propertize "■" 'face 'all-the-icons-yellow)
+            :priority_d   ,(propertize "⬇" 'face 'all-the-icons-green)
+            :priority_e   ,(propertize "❓" 'face 'all-the-icons-blue)))
+(set-ligatures! 'org-mode
+  :merge t
+  :checkbox      "[ ]"
+  :pending       "[-]"
+  :checkedbox    "[X]"
+  :list_property "::"
+  :em_dash       "---"
+  :ellipsis      "..."
+  :arrow_right   "->"
+  :arrow_left    "<-"
+  :title         "#+title:"
+  :subtitle      "#+subtitle:"
+  :author        "#+author:"
+  :date          "#+date:"
+  :property      "#+property:"
+  :options       "#+options:"
+  :startup       "#+startup:"
+  :macro         "#+macro:"
+  :html_head     "#+html_head:"
+  :html          "#+html:"
+  :latex_class   "#+latex_class:"
+  :latex_header  "#+latex_header:"
+  :beamer_header "#+beamer_header:"
+  :latex         "#+latex:"
+  :attr_latex    "#+attr_latex:"
+  :attr_html     "#+attr_html:"
+  :attr_org      "#+attr_org:"
+  :begin_quote   "#+begin_quote"
+  :end_quote     "#+end_quote"
+  :caption       "#+caption:"
+  :header        "#+header:"
+  :begin_export  "#+begin_export"
+  :end_export    "#+end_export"
+  :results       "#+RESULTS:"
+  :property      ":PROPERTIES:"
+  :end           ":END:"
+  :priority_a    "[#A]"
+  :priority_b    "[#B]"
+  :priority_c    "[#C]"
+  :priority_d    "[#D]"
+  :priority_e    "[#E]")
+(plist-put +ligatures-extra-symbols :name "⁍")
+)
+
+(with-eval-after-load 'org
+  (plist-put org-format-latex-options :background 'default))
+
+#+end_src
+
+** Getting Things Done
+
+   Oh yeah this is definitely working for me I've definitely changed as a person.
+  #+begin_src emacs-lisp :tangle yes
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -406,12 +749,19 @@
   ("C-c d s" . org-gtd-show-stuck-projects)) ;; see projects that don't have a NEXT item
   :init
   (bind-key "C-c c" 'org-gtd-clarify-finalize)) ;; the keybinding to hit when you're done editing an item in the processing phase
+#+end_src
+
+*** Set agenda files
+#+begin_src emacs-lisp :tangle yes
 
 (setq org-agenda-files '("~/OneDrive/org-roam/inbox" "~/OneDrive/org-roam/actionable.org"
                          "~/OneDrive/org-roam/agenda.org" "~/OneDrive/org-roam/incubate.org"
                          "~/OneDrive/org-roam/openquestions.org"))
+#+end_src
 
+*** Org capture Templates
 
+#+begin_src emacs-lisp :tangle yes
 (after! org
 (setq org-capture-templates `(("i" "Inbox"
                                  entry (file "~/OneDrive/org-roam/inbox.org")
@@ -429,10 +779,11 @@
                                  "* OPEN %? \n %U\n")))
 (set-face-attribute 'org-headline-done nil :strike-through t)
 )
-
-
+#+end_src
+*** Org-super agenda
+ #+begin_src elisp
 (use-package! org-super-agenda
-  :hook (org-agenda-finalize . org-super-agenda-mode)
+  :hook (org-agenda-mode . org-super-agenda-mode)
 )
 
 
@@ -491,9 +842,9 @@
                           (:name "Notes"
                                  :tag "notes"
                                  :order 20)
-                          (:name "Open Questions"
-                                 :todo "OPEN"
-                                 :order 3)
+                          ;(:name "Open Questions"
+                          ;       :todo "OPEN"
+                          ;       :order 3)
                           (:name "trivial"
                                  :priority<= "C"
                                  :tag ("Trivial" "Unimportant")
@@ -501,31 +852,51 @@
                                  :order 90)
                           (:discard (:tag ("Chore" "Routine" "Daily")))))))))))
 
-;(use-package! org-notifications
-;  :init (org-notifications-start) )
+ #+end_src
 
+*** Notifications
 
-;;;;;
-;;
-;;    Writing
-;;
-;;;;;;
+I want notifications to work so bad but it just is working :(
 
+#+begin_src emacs-lisp :tangle no
+(use-package! org-notifications
+  :init (org-notifications-start) )
+#+end_src
+
+** Writing
+
+I want thing to be in the middle.
+
+#+begin_src emacs-lisp :tangle yes
 (use-package! olivetti
   :after org-roam
   :config
-    (setq olivetti-minimum-body-width 80)
+    (setq olivetti-minimum-body-width 60
+          olivetti-body-with 80
   )
 
+#+end_src
+
+Pretty cool: focus only the paragraph you're looking at. Don't really use it though.
+#+begin_src emacs-lisp :tangle yes
 (use-package! focus
   :after org-roam
-:config
-(add-to-list 'focus-mode-to-thing '(org-mode . paragraph))
+  :config
+        (add-to-list 'focus-mode-to-thing '(org-mode . paragraph))
   )
+;(require 'nano-writer)
 
 
-(require 'nano-writer)
+#+end_src
+
+** Custom Minor Modes
+
+   Guaranteed not stolen.
+
+#+begin_src emacs-lisp :tangle yes
 ;;;;;
+
+
 ;;
 ;;    Custom Minor Modes
 ;;
@@ -547,6 +918,13 @@
       (kill-local-variable `,local)))
   )
 
+
+#+end_src
+
+
+Make everything variable pitch, who the hell likes reading fixed-pitch?
+
+#+begin_src emacs-lisp :tangle yes
 (define-minor-mode prot/variable-pitch-mode
   "Toggle 'mixed-pitch-modei, except for programming modes"
   :init-value nil
@@ -555,6 +933,11 @@
       (unless (derived-mode-p 'prog-mode)
         (variable-pitch-mode 1))
     (variable-pitch-mode -1)))
+#+end_src
+
+NO line numbers.
+
+#+begin_src emacs-lisp :tangle yes
 
 (define-minor-mode prot/display-line-number-mode
   "Disable line numbers, except for programming modes."
@@ -564,7 +947,11 @@
       (unless (derived-mode-p 'prog-mode)
         (display-line-numbers-mode -1))
     (display-line-numbers-mode 1)))
+#+end_src
 
+Throw everything together, but in a bad way.
+
+#+begin_src emacs-lisp :tangle no
 (define-minor-mode thomas/writing-mode
   "Toggle mixed-pitch-mode, center-text, scroll-center and disable line numbers, in writing modes."
   :init-value nil
@@ -612,7 +999,11 @@
   )
 
 
+#+end_src
 
+** Nano writer mode implementation, not used atm
+
+#+begin_src elisp :tangle no
 (defun writer-mode--num-format (numbering)
   "Alternative numbering format for org-num.
 First level: 1 | xxx
@@ -712,13 +1103,56 @@ etc."
   (org-num-mode)
   (setq org-num-format-function 'writer-mode--num-format))
 
-;;;;;;;;
+;; Fringe shit
+;;
+
+#+end_src
+
+** Trying to make olivetti-mode better, and failing
+#+begin_src emacs-lisp :tangle no
+(setq solaire-mode-remap-fringe nil)
+;(set-face-background 'solaire-fringe-face (face-background 'solaire-hl-line-face))
+
+
+(setq thomas-fringe-size 500)
+(setq thomas-margin-size 10)
+;  "Variable which sets the size of the fringes."
+;  :type 'integer
+;  :group 'thomas-aesthetics)
+
+(after! solaire-mode
+  (define-minor-mode thomas-fringe-mode
+  "Minor mode to hide the mode-line in the current buffer."
+  :init-value nil
+  :group 'thomas-aesthetics
+  (if (not thomas-fringe-mode)
+      (progn
+        (set-face-background 'solaire-fringe-face (face-background 'solaire-default-face))
+        (setq left-fringe-width nil
+              right-fringe-width nil))
+    (progn (set-face-background 'solaire-fringe-face (face-background 'solaire-hl-line-face))
+      (setq left-fringe-width thomas-fringe-size
+            right-fringe-width thomas-fringe-size
+            left-margin-width thomas-margin-size
+            right-margin-width thomas-margin-size)))))
+
+;(add-hook! 'org-mode-hook #'thomas-fringe-mode)
+(add-hook! thomas-fringe-mode-hook (custom-set-faces! '(solaire-fringe-face :background (face-background))))
+;(setq solaire-mode-remap-fringe nil)
+
+
+#+end_src
+
+** Org-latex export
+
+#+begin_src emacs-lisp :tangle yes
+                ;;;;;;;;
 ;;
 ;; org-latex-export
 ;;
 ;;;;;;;;
 
-(with-eval-after-load 'ox-latex
+(after! 'ox-latex
    (add-to-list 'org-latex-classes
                 '("tufte"
                   "\\documentclass{tufte-book}"
@@ -735,36 +1169,79 @@ etc."
                   ("\\section{%s}" . "\\section*{%s}")
                   ("\\subsection{%s}" . "\\subsection*{%s}")
                   ("\\subsubsection{%s}" . "\\subsubsection*{%s}"))
-                ))
-
-#+END_SOURCE
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;
-;     Keyboard shortcuts
-;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                )
+        (setq org-latex-text-markup-alist '((bold . "\\textbf{%s}")
+                                            (code . protectedtexttt)
+                                       (italic . "\\emph{%s}")
+					 (strike-through . "\\sout{%s}")
+					 (underline . "\\uline{%s}")
+					 (verbatim . "{\\color{red}%s}")))
+        (add-to-list 'org-latex-default-packages-alist '("" "xcolor" nil) '("" "braket" nil)))
 
 
+#+end_src
 
-#+BEGIN_SOURCE emacs-lisp :tangle yes
+* Some other things, such as vterm
+
+#+begin_src elisp :tangle yes
+        ;;;;;;;;;;;;;
+;;;
+;;; Other
+;;;
+;;;;;;;;;;;;
+
+(setq vterm-shell "/usr/bin/fish")
+
+(setq evil-escape-key-sequence "qd")
+
+(add-hook! 'fundamental-mode-hook (solaire-mode -1))
+;(use-package! tree-sitter
+;  :config
+;  (require 'tree-sitter-langs)
+;  (global-tree-sitter-mode)
+;  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
+
+
+;(use-package tree-sitter-langs
+;  :ensure t
+;  :after tree-sitter
+;  :config
+; (tree-sitter-require 'tsx)
+;  (add-to-list 'tree-sitter-major-mode-language-alist '(typescript-tsx-mode . tsx)))
+
+#+end_src
+
+* Keyboard shortcuts
+
+** Great keybindings by moi
+#+begin_src elisp :tangle yes
 (map! :leader
       (:prefix ("r" . "roam")
        :desc "find file"            "f"   #'org-roam-find-file
        :desc "highlight"            "r"   #'org-noter-insert-note
-       :desc "start taking notes"   "s"   #'org-noter
+       :desc "center scroll"        "s"   #'prot/scroll-center-cursor-mode
+       :desc "start taking notes"   "S"   #'org-noter
        :desc "toggle buffer"        "b"   #'org-roam-buffer-toggle-display
        :desc "insert note"          "i"   #'org-roam-insert
        :desc "server"               "g"   #'org-roam-server
        :desc "quit notes"           "q"   #'org-noter-kill-session
        :desc "tag (roam)"           "t"   #'org-roam-tag-add
-       :desc "tag (org)"            "o"   #'org-set-tags-command
+       :desc "tag (org)"            "T"   #'org-set-tags-command
        :desc "pomodoro"             "p"   #'org-pomodoro
        :desc "change nano-theme"    "n"   #'nano-change-theme
        :desc "rebuid db"            "d"   #'org-roam-db-build-cache
        :desc "cite"                 "c"   #'helm-bibtex
        :desc "writing-mode"         "w"   #'thomas/writing-mode
+       :desc "outline"              "o"   #'org-ol-tree
+       (:prefix ("m" . "transclusion")
+                :desc "make link"            "m"   #'org-transclusion-make-from-link
+                :desc "transclusion mode"    "t"   #'org-transclusion-mode
+                :desc "add at point"         "a"   #'org-transclusion-add-at-point
+                :desc "add all in buffer"    "A"   #'org-transclusion-add-all-in-buffer
+                :desc "remove at point"      "r"   #'org-transclusion-remove-at-point
+                :desc "remove all in buffer" "R"   #'org-transclusion-remove-all-in-buffer
+                :desc "start live edit"      "s"   #'org-transclusion-live-sync-start-at-point
+                :desc "stop live edit"       "S"   #'org-transclusion-live-sync-exit-at-point)
        )
       (:prefix ("d" . "GTD")
        :desc  "process inbox" "p"#'org-gtd-process-inbox
@@ -773,9 +1250,47 @@ etc."
        :desc  "show next" "n" #'org-gtd-show-all-next
        :desc  "show stuck project" "s" #'org-gtd-show-stuck-projects)
       )
+#+end_src
 
-#+END_SOURCE
+** Workman
 
-#+BEGIN_SOURCE emacs-lisp :tangle yes
+   I use the Workman keyboard layout, this package sets most of the evil shortcuts to more sensible positions. I still need to add some more specific shortcuts, for instance for moving windows.
+#+begin_src emacs-lisp :tangle yes
 (evil-workman-global-mode t)
-#+END_SOURCE
+ #+end_src
+
+This does not fix the window bindings, so we have to do that manually
+
+#+begin_src emacs-lisp :tangle yes
+(map!
+ :map evil-window-map
+      "y" #'evil-window-left
+      "Y" #'+evil/window-move-left
+      "n" #'evil-window-down
+      "N" #'+evil/window-move-down
+      "e" #'evil-window-up
+      "E" #'+evil/window-move-up
+      "o" #'evil-window-right
+      "O" #'+evil/window-move-right)
+#+end_src
+
+
+This does not apply them to org-mode, which uses evil-org.el, but those are easily customized
+
+#+begin_src emacs-lisp :tangle yes
+(after! evil-org
+  (setq evil-org-movement-bindings
+        '((up . "e")
+          (down . "n")
+          (left . "y")
+          (right . "o")))
+  (evil-define-key 'normal evil-org-mode-map
+    "o"         'evil-forward-char
+    "l"          'evil-org-open-below
+    "L"         'evil-org-open-above
+    "gy"        'org-backward-element
+    "gn"        'org-down-element
+    "ge"        'org-up-element
+    "go"        'org-forward-element)
+  )
+          #+end_src
