@@ -1,0 +1,10 @@
+# -*- mode: snippet -*-
+# name: equation 
+# key: eq
+# --
+\begin{equation}
+    $1
+    \label{eq:$2}
+\end{equation}
+
+$0

@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: superscript 
+# key: sp
+# --
+^{$1} $0

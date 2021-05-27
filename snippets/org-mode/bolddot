@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: bolddot 
+# key: bd
+# --
+\cdot{\boldface{$1}} $0

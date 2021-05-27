@@ -1,0 +1,781 @@
+#+TITLE: Config
+
+#+BEGIN_SOURCE emacs-lisp :tangle yes
+
+;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
+
+;; Place your private configuration here! Remember, you do not need to run 'doom
+;; sync' after modifying this file!
+
+
+;; Some functionality uses this to identify you, e.g. GPG configuration, email
+;; clients, file templates and snippets.
+(setq user-full-name "Thomas F. K. Jorna"
+      user-mail-address "jorna@jtrialerror.com")
+
+;; Doom exposes five (optional) variables for controlling fonts in Doom. Here
+;; are the three important ones:
+;;
+;; + `doom-font'
+;; + `doom-variable-pitch-font'
+;; + `doom-big-font' -- used for `doom-big-font-mode'; use this for
+;;   presentations or streaming.
+;;
+;; They all accept either a font-spec, font string ("Input Mono-12"), or xlfd
+;; font string. You generally only need these two:
+ (setq doom-font (font-spec :family "Fira Code" :size 14 :weight 'semi-light)
+       doom-variable-pitch-font (font-spec :family "Noto Serif" :size 16))
+
+;; There are two ways to load a theme. Both assume the theme is installed and
+;; available. You can either set `doom-theme' or manually load a theme with the
+;; `load-theme' function. This is the default:
+(setq doom-theme 'doom-gruvbox)
+
+;; If you use `org' and don't want your org files in the default location below,
+;; change `org-directory'. It must be set before org loads!
+(setq org-directory "~/OneDrive/org-roam/"
+      org-roam-directory "~/OneDrive/org-roam")
+
+;; This determines the style of line numbers in effect. If set to `nil', line
+;; numbers are disabled. For relative line numbers, set this to `relative'.
+(setq display-line-numbers-type t)
+(defcustom display-line-numbers-exempt-modes '(vterm-mode eshell-mode shell-mode term-mode ansi-term-mode org-mode)
+  "Major modes on which to disable the linum mode, exempts them from global requirement"
+  :group 'display-line-numbers
+  :type 'list
+  :version "green")
+
+(defun display-line-numbers--turn-on ()
+  "turn on line numbers but excempting certain majore modes defined in `display-line-numbers-exempt-modes'"
+  (if (and
+       (not (member major-mode display-line-numbers-exempt-modes))
+       (not (minibufferp)))
+      (display-line-numbers-mode)))
+
+;; Here are some additional functions/macros that could help you configure Doom:
+;;
+;; - `load!' for loading external *.el files relative to this one
+;; - `use-package!' for configuring packages
+;; - `after!' for running code after a package has loaded
+;; - `add-load-path!' for adding directories to the `load-path', relative to
+;;   this file. Emacs searches the `load-path' when you load packages with
+;;   `require' or `use-package'.
+;; - `map!' for binding new keys
+;;
+;; To get information about any of these functions/macros, move the cursor over
+;; the highlighted symbol at press 'K' (non-evil users must press 'C-c c k').
+;; This will open documentation for it, including demos of how they are used.
+;;
+;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
+;; they are implemented.
+
+
+(defvar nano-theme-light-var t)
+(require 'disp-table)
+;(require 'nano-theme-dark)
+;(require 'nano-theme-light)
+;(nano-theme-set-light)
+;(require 'nano-layout)
+;(require 'nano-base-colors)
+(require 'nano-faces)
+(nano-faces)
+;(require 'nano-theme)
+;(nano-theme)
+(require 'nano-modeline)
+;(require 'nano-writer)
+;;(nano-theme)
+;;
+
+(setq default-frame-alist
+      (append (list
+	       ;; '(font . "Roboto Mono Emacs Regular:size=14")
+	       '(min-height . 1)  '(height     . 45)
+	       '(min-width  . 1) '(width      . 81)
+               '(vertical-scroll-bars . nil)
+               '(internal-border-width . 24)
+               '(left-fringe    . 0)
+               '(right-fringe   . 0)
+               '(tool-bar-lines . 0)
+               '(menu-bar-lines . 0))))
+
+
+
+(defun nano-change-theme-dark ()
+  (interactive)
+  (nano-theme-set-dark)
+  (nano-faces)
+  (nano-theme))
+
+(defun nano-change-theme-light ()
+  (interactive)
+  (nano-theme-set-light)
+  (nano-faces)
+  (nano-theme))
+
+(defun nano-change-theme ()
+  (interactive)
+  (if nano-theme-light-var (nano-change-theme-dark) (nano-change-theme-light))
+  (setq nano-theme-light-var (not nano-theme-light-var)))
+
+(defvar +org-roam-open-buffer-on-find-file t
+  "If non-nil, open the org-roam buffer when opening an org roam file.")
+
+
+;  (setq centaur-tabs-style "wave")
+;  (setq centaur-tabs-set-bar 'under)
+;; Note: If you're not using Spacmeacs, in order for the underline to display
+;; correctly you must add the following line:
+;(setq x-underline-at-descent-line t)
+
+
+;;
+;;; Packages
+
+
+(use-package! org-fragtog
+  :hook (org-load . org-fragtog-mode)
+  )
+
+(use-package! org-transclusion
+  :after org-roam
+  )
+
+(use-package! org-roam
+  ;;:hook (org-load . org-roam-mode)
+  :hook (org-roam-backlinks-mode . turn-on-visual-line-mode)
+  :commands (org-roam-buffer-toggle-display
+             org-roam-dailies-find-date
+             org-roam-dailies-find-today
+             org-roam-dailies-find-tomorrow
+             org-roam-dailies-find-yesterday)
+  :preface
+  ;; Set this to nil so we can later detect if the user has set custom values
+  ;; for these variables. If not, default values will be set in the :config
+  ;; section.
+  (defvar org-roam-directory nil)
+  (defvar org-roam-db-location nil)
+  :init
+  (map! :after org
+        :map org-mode-map
+        :localleader
+        :prefix ("m" . "org-roam")
+        "b" #'org-roam-switch-to-buffer
+        "f" #'org-roam-find-file
+        "g" #'org-roam-graph
+        "i" #'org-roam-insert
+        "I" #'org-roam-insert-immediate
+        "m" #'org-roam
+        "t" #'org-roam-tag-add
+        "T" #'org-roam-tag-delete
+        (:prefix ("d" . "by date")
+         :desc "Find previous note" "b" #'org-roam-dailies-find-previous-note
+         :desc "Find date"          "d" #'org-roam-dailies-find-date
+         :desc "Find next note"     "f" #'org-roam-dailies-find-next-note
+         :desc "Find tomorrow"      "m" #'org-roam-dailies-find-tomorrow
+         :desc "Capture today"      "n" #'org-roam-dailies-capture-today
+         :desc "Find today"         "t" #'org-roam-dailies-find-today
+         :desc "Capture Date"       "v" #'org-roam-dailies-capture-date
+         :desc "Find yesterday"     "y" #'org-roam-dailies-find-yesterday
+         :desc "Find directory"     "." #'org-roam-dailies-find-directory))
+  :config
+  (setq org-roam-directory
+        (file-name-as-directory
+         (file-truename
+          (expand-file-name (or org-roam-directory "roam")
+                            org-directory)))
+        org-roam-db-location (or org-roam-db-location
+                                 (concat doom-etc-dir "org-roam.db"))
+        org-roam-verbose nil   ; https://youtu.be/fn4jIlFwuLU
+        ;; Make org-roam buffer sticky; i.e. don't replace it when opening a
+        ;; file with an *-other-window command.
+        org-roam-buffer-window-parameters '((no-delete-other-windows . t))
+        org-roam-completion-everywhere t
+        org-roam-completion-system
+        (cond ((featurep! :completion helm) 'helm)
+              ((featurep! :completion ivy) 'ivy)
+              ((featurep! :completion ido) 'ido)
+              ('default)))
+
+  ;; Normally, the org-roam buffer doesn't open until you explicitly call
+  ;; `org-roam'. If `+org-roam-open-buffer-on-find-file' is non-nil, the
+  ;; org-roam buffer will be opened for you when you use `org-roam-find-file'
+  ;; (but not `find-file', to limit the scope of this behavior).
+  (add-hook! 'find-file-hook
+    (defun +org-roam-open-buffer-maybe-h ()
+      (and +org-roam-open-buffer-on-find-file
+           (memq 'org-roam-buffer--update-maybe post-command-hook)
+           (not (window-parameter nil 'window-side)) ; don't proc for popups
+           (not (eq 'visible (org-roam-buffer--visibility)))
+           (with-current-buffer (window-buffer)
+             (org-roam-buffer--get-create)))))
+
+  ;; Hide the mode line in the org-roam buffer, since it serves no purpose. This
+  ;; makes it easier to distinguish from other org buffers.
+  (add-hook 'org-roam-buffer-prepare-hook #'hide-mode-line-mode))
+
+
+;; Since the org module lazy loads org-protocol (waits until an org URL is
+;; detected), we can safely chain `org-roam-protocol' to it.
+(use-package! org-roam-protocol
+  :after org-protocol)
+
+(use-package! org-roam-server
+  :after org-roam
+  :config
+  (setq org-roam-server-host "127.0.0.1"
+        org-roam-server-port 8081
+        org-roam-server-authenticate nil
+        org-roam-server-export-inline-images t
+        org-roam-server-serve-files nil
+        org-roam-server-served-file-extensions '("pdf" "mp4" "ogv")
+        org-roam-server-network-poll t
+        org-roam-server-network-arrows nil
+        org-roam-server-network-label-truncate t
+        org-roam-server-network-label-truncate-length 60
+        org-roam-server-network-label-wrap-length 20
+        org-roam-server-network-vis-options "{\"physics\": {\"stabilization: {\"iterations\": 10}\"}"
+        ;;"{\"physics\": {\"enabled\": true, \"barnesHut\":{\"gravitationalConstant\" : -6000, \"avoidOverlap\" : 0.5, \"springLength\" : 200}, \"stabilization\": {\"enabled\": true, \"iterations\": 30}},
+        ;;\"edges\": {\"physics\": true, \"hidden\": false, \"smooth\": {\"enabled\": false, \"type\": \"continuous\"}}}"
+        org-roam-server-cite-edge-dashes t
+        org-roam-server-extra-cite-edge-options (list (cons 'width 3))
+        ))
+
+(defun org-roam-server-open ()
+    "Ensure the server is active, then open the roam graph."
+    (interactive)
+    (smartparens-global-mode -1)
+    (org-roam-server-mode 1)
+    (browse-url-xdg-open (format "http://localhost:%d" org-roam-server-port))
+    (smartparens-global-mode 1))
+
+;; automatically enable server-mode
+(after! org-roam
+  (smartparens-global-mode -1)
+  (org-roam-server-mode)
+  (smartparens-global-mode 1))
+
+
+(use-package! org-ref
+    ;:after org-roam
+    :config
+    (setq
+         org-ref-completion-library 'org-ref-ivy-cite
+         org-ref-get-pdf-filename-function 'org-ref-get-pdf-filename-helm-bibtex
+         org-ref-default-bibliography (list "/home/thomas/OneDrive/org-roam/bib/Library.bib")
+         org-ref-bibliography-notes "/home/thomas/OneDrive/org-roam/bibnotes.org"
+         org-ref-note-title-format "* %y - %t\n :PROPERTIES:\n  :Custom_ID: %k\n  :NOTER_DOCUMENT: %F\n :ROAM_KEY: cite:%k\n  :AUTHOR: %9a\n  :JOURNAL: %j\n  :YEAR: %y\n  :VOLUME: %v\n  :PAGES: %p\n  :DOI: %D\n  :URL: %U\n :END:\n\n"
+         org-ref-notes-directory "/home/thomas/OneDrive/org-roam/"
+         org-ref-notes-function 'orb-edit-notes
+    ))
+
+(after! org-ref
+(setq
+ bibtex-completion-notes-path "/home/thomas/OneDrive/org-roam/"
+ bibtex-completion-bibliography "/home/thomas/OneDrive/org-roam/bib/Library.bib"
+ bibtex-completion-pdf-field "file"
+ bibtex-completion-notes-template-multiple-files
+ (concat
+  "#+TITLE: ${title}\n"
+  "#+ROAM_KEY: cite:${=key=}\n"
+  "* TODO Notes\n"
+  ":PROPERTIES:\n"
+  ":Custom_ID: ${=key=}\n"
+  ":NOTER_DOCUMENT: %(orb-process-file-field \"${=key=}\")\n"
+  ":AUTHOR: ${author-abbrev}\n"
+  ":JOURNAL: ${journaltitle}\n"
+  ":DATE: ${date}\n"
+  ":YEAR: ${year}\n"
+  ":DOI: ${doi}\n"
+  ":URL: ${url}\n"
+  ":END:\n\n"
+  )
+ )
+)
+
+(use-package! company-org-roam
+  :after org-roam
+  :config
+  (set-company-backend! 'org-mode '(company-org-roam company-yasnippet company-dabbrev)))
+
+(use-package! org-roam-bibtex
+  :after org-roam
+  :hook (org-roam-mode . org-roam-bibtex-mode)
+  :config
+  (require 'org-ref)
+  (setq orb-preformat-keywords
+   '("citekey" "title" "url" "file" "author-or-editor" "keywords" "pdf" "doi" "author" "tags"))
+  (setq orb-templates
+        '(("r" "ref" plain (function org-roam-capture--get-point)
+           ""
+           :file-name "${slug}"
+           :head "#+TITLE: ${citekey}: ${title}\n#+ROAM_KEY: ${ref}
+\n#+ROAM_TAGS: reference ${keywords} \n
+\n* ${title}\n  :PROPERTIES:\n  :Custom_ID: ${citekey}\n  :DOI: ${doi}\n  :AUTHOR: ${author}\n  :END:\n\n
+\n* Summary
+\n\n\n* Rough note space\n"
+           :unnarrowed t))))
+;)
+
+(use-package! org-noter
+  :after (:any org pdf-view)
+  :config
+  (setq
+   ;; The WM can handle splits
+   ;;org-noter-notes-window-location 'other-frame
+   ;; Please stop opening frames
+   ;;org-noter-always-create-frame nil
+   ;; I want to see the whole file
+   org-noter-hide-other nil
+   ;; Everything is relative to the rclone mega
+   org-noter-notes-search-path "/home/thomas/OneDrive/org-roam"
+   )
+  )
+
+
+(use-package! org-pdftools
+  :hook (org-load . org-pdftools-setup-link))
+(use-package! org-noter-pdftools
+  :after org-noter
+  :config
+  (with-eval-after-load 'pdf-annot
+    (add-hook 'pdf-annot-activate-handler-functions#'org-noter-pdftools-jump-to-note)))
+
+
+
+;;;;;;;;;;; Fix latex background
+;;;;;;;;;;;
+;
+
+  (defun +org-update-latex-preview-background-color (&rest _)
+(interactive)
+    (setq-default
+     org-format-latex-options
+     (plist-put org-format-latex-options
+                :background
+                (face-attribute (or (cadr (assq 'default face-remapping-alist))
+                                    'default)
+                                :background nil t))))
+  ;(advice-add #'load-theme :after #'+org-update-latex-preview-background-color)
+
+;;(add-hook 'solaire-mode-hook #'+org-update-latex-preview-background-color)
+
+;(use-package!
+;    :after
+;    :hook
+;    :init
+;    :config
+;    )
+
+
+;(use-package!
+;    :after
+;    :hook
+;    :init
+;    :config
+;    )
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+;      Getting Things Done
+;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(use-package! org-gtd
+  :after org
+  :config
+  ;; where org-gtd will put its files. This value is also the default one.
+  (setq org-gtd-directory "~/OneDrive/org-roam/")
+  ;; package: https://github.com/Malabarba/org-agenda-property
+  ;; this is so you can see who an item was delegated to in the agenda
+  (setq org-agenda-property-list '("DELEGATED_TO"))
+  ;; I think this makes the agenda easier to read
+  (setq org-agenda-property-position 'next-line)
+  ;; package: https://www.nongnu.org/org-edna-el/
+  ;; org-edna is used to make sure that when a project task gets DONE,
+  ;; the next TODO is automatically changed to NEXT.
+  (setq org-edna-use-inheritance t)
+  (org-edna-load)
+  :bind
+  (("C-c d c" . org-gtd-capture) ;; add item to inbox
+  ("C-c d a" . org-agenda-list) ;; see what's on your plate today
+  ("C-c d p" . org-gtd-process-inbox) ;; process entire inbox
+  ("C-c d n" . org-gtd-show-all-next) ;; see all NEXT items
+  ("C-c d s" . org-gtd-show-stuck-projects)) ;; see projects that don't have a NEXT item
+  :init
+  (bind-key "C-c c" 'org-gtd-clarify-finalize)) ;; the keybinding to hit when you're done editing an item in the processing phase
+
+(setq org-agenda-files '("~/OneDrive/org-roam/inbox" "~/OneDrive/org-roam/actionable.org"
+                         "~/OneDrive/org-roam/agenda.org" "~/OneDrive/org-roam/incubate.org"
+                         "~/OneDrive/org-roam/openquestions.org"))
+
+
+(after! org
+(setq org-capture-templates `(("i" "Inbox"
+                                 entry (file "~/OneDrive/org-roam/inbox.org")
+                                 "* %?\n%U\n\n  %i"
+                                 :kill-buffer t)
+                                ("l" "Todo with link"
+                                 entry (file "~/OneDrive/org-rom/inbox.org")
+                                 "* %?\n%U\n\n  %i\n  %a"
+                                 :kill-buffer t)
+                                ("m" "Meeting"
+                                 entry (file+headline "/home/thomas/OneDrive/org-roam/agenda.org" "Future")
+                                ,(concat "* TODO %? :meeting:\n" "<%<%Y-%m-%d %a %H:00>>"))
+                                ("o" "Open Question Thesis"
+                                 entry (file+headline "~/OneDrive/org-roam/openquestions.org" "Questions")
+                                 "* OPEN %? \n %U\n")))
+(set-face-attribute 'org-headline-done nil :strike-through t)
+)
+
+
+(use-package! org-super-agenda
+  :hook (org-agenda-finalize . org-super-agenda-mode)
+)
+
+
+  (setq org-agenda-skip-scheduled-if-done t
+      org-agenda-skip-deadline-if-done t
+      org-agenda-include-deadlines t
+      org-agenda-include-diary t
+      org-agenda-block-separator nil
+      org-agenda-compact-blocks t
+      org-agenda-start-with-log-mode t
+      org-agenda-start-day nil)
+(setq org-agenda-custom-commands
+      '(("d" "Get Things DONE"
+         ((agenda "" ((org-agenda-span 1)
+                      (org-super-agenda-groups
+                       '((:name "Today"
+                                :time-grid t
+                                :date nil
+                                :todo "TODAY"
+                                :scheduled nil
+                                :order 1)))))
+          (alltodo "" ((org-agenda-overriding-header "")
+                       (org-super-agenda-groups
+                        '((:discard (:todo "TODO"))
+                          (:name "Important"
+                                 :tag "Important"
+                                 :priority "A"
+                                 :order 1)
+                          (:name "Due Today"
+                                 :deadline today
+                                 :order 2)
+                          (:name "Due Soon"
+                                 :deadline future
+                                 :order 8)
+                          (:name "Overdue"
+                                 :deadline past
+                                 :order 7)
+                          (:name "Thesis"
+                                 :tag "thesis"
+                                 :order 10)
+                          (:name "ESN"
+                                 :tag "esn"
+                                 :order 12)
+                          (:name "JOTE"
+                                 :tag "jote"
+                                 :order 13)
+                          (:name "Emacs"
+                                 :tag "emacs"
+                                 :order 14)
+                          (:name "Home"
+                                 :tag "home"
+                                 :order 30)
+                          (:name "Waiting"
+                                 :todo "WAITING"
+                                 :order 20)
+                          (:name "Notes"
+                                 :tag "notes"
+                                 :order 20)
+                          (:name "Open Questions"
+                                 :todo "OPEN"
+                                 :order 3)
+                          (:name "trivial"
+                                 :priority<= "C"
+                                 :tag ("Trivial" "Unimportant")
+                                 :todo ("SOMEDAY" )
+                                 :order 90)
+                          (:discard (:tag ("Chore" "Routine" "Daily")))))))))))
+
+;(use-package! org-notifications
+;  :init (org-notifications-start) )
+
+
+;;;;;
+;;
+;;    Writing
+;;
+;;;;;;
+
+(use-package! olivetti
+  :after org-roam
+  :config
+    (setq olivetti-minimum-body-width 80)
+  )
+
+(use-package! focus
+  :after org-roam
+:config
+(add-to-list 'focus-mode-to-thing '(org-mode . paragraph))
+  )
+
+
+(require 'nano-writer)
+;;;;;
+;;
+;;    Custom Minor Modes
+;;
+;;;;;
+
+(define-minor-mode prot/scroll-center-cursor-mode
+  "Toggle centred cursor scrolling behavior"
+  :init-value nil
+  :lighter " S="
+  :global nil
+  (if prot/scroll-center-cursor-mode
+      (setq-local scroll-margin (* (frame-height) 2)
+                  scroll-conservatively 0
+                  maximum-scroll-margin 0.5)
+    (dolist (local '(scroll-preserve-screen-position
+                     scroll-conservatively
+                     maximum-scroll-margin
+                     scroll-margin))
+      (kill-local-variable `,local)))
+  )
+
+(define-minor-mode prot/variable-pitch-mode
+  "Toggle 'mixed-pitch-modei, except for programming modes"
+  :init-value nil
+  :global nil
+  (if prot/variable-pitch-mode
+      (unless (derived-mode-p 'prog-mode)
+        (variable-pitch-mode 1))
+    (variable-pitch-mode -1)))
+
+(define-minor-mode prot/display-line-number-mode
+  "Disable line numbers, except for programming modes."
+  :init-value nil
+  :global nil
+  (if prot/display-line-number-mode
+      (unless (derived-mode-p 'prog-mode)
+        (display-line-numbers-mode -1))
+    (display-line-numbers-mode 1)))
+
+(define-minor-mode thomas/writing-mode
+  "Toggle mixed-pitch-mode, center-text, scroll-center and disable line numbers, in writing modes."
+  :init-value nil
+  :global nil
+  (if thomas/writing-mode
+      (unless (derived-mode-p 'prog-mode)
+        (nano/writer-mode 1)
+        (prot/display-line-number-mode 1)
+        (prot/variable-pitch-mode 1)
+        (prot/scroll-center-cursor-mode 1)
+        (olivetti-mode 1)
+        (focus-mode 1)
+        (org-fragtog-mode 1)
+        (org-roam-buffer-deactivate)
+        (hl-line-mode -1)
+        (org-indent-mode -1)
+        (minimap-mode)
+        ;(centaur-tabs-mode -1)
+        ;(org-mode-restart)
+        )
+        (prot/display-line-number-mode -1)
+        (prot/variable-pitch-mode -1)
+        (prot/scroll-center-cursor-mode -1)
+        (nano/writer-mode -1)
+        (olivetti-mode -1)
+        (focus-mode -1)
+        (org-fragtog-mode -1)
+        ;(centaur-tabs-mode 1 )
+        (org-indent-mode 1)
+        (minimap-mode -1)
+        ;;(org-mode-restart)
+
+        ))
+
+(defun thomas/writing-mode-fun ()
+  "Toggle mixed-pitch-mode, center-text, scroll-center and disable line numbers, in writing modes."
+  ;;(interactive)
+  (org-superstar-mode -1)
+  (require 'nano-writer)
+  (writer-mode)
+        (prot/display-line-number-mode 1)
+        (prot/mixed-pitch-mode 1)
+        (prot/scroll-center-cursor-mode 1)
+        (olivetti-mode 1)
+  )
+
+
+
+(defun writer-mode--num-format (numbering)
+  "Alternative numbering format for org-num.
+First level: 1 | xxx
+Second level: 1.1 — xxx
+Third level: 1.1.1 - xxx
+etc."
+  (if (= (length numbering) 1)
+      (propertize (concat (mapconcat
+                           #'number-to-string
+                           numbering ".") " | " )
+                  'face `(:family "Roboto Condensed"
+                          :height 250
+                          :foreground ,nano-color-faded))
+    (propertize (concat (mapconcat
+                         #'number-to-string
+                         numbering ".") " — " )
+                'face `(:family "Roboto Condensed"
+                        :foreground ,nano-color-faded))))
+
+;; Specific face for headline stars
+;(font-lock-add-keywords 'writer-mode
+;             '(("^*+ " 0 `(:family "Roboto Mono"
+;                           :height 140
+;                           :foreground ,nano-color-faded) prepend)
+;               ) 'append)
+
+(defun writer-mode--compute-prefixes ()
+  "Compute prefix strings for regular text and headlines."
+
+  (setq org-indent--heading-line-prefixes
+        (make-vector org-indent--deepest-level nil))
+  (setq org-indent--inlinetask-line-prefixes
+        (make-vector org-indent--deepest-level nil))
+  (setq org-indent--text-line-prefixes
+        (make-vector org-indent--deepest-level nil))
+
+  (let* ((min-indent 5)
+         (indent (+ 1 (seq-max
+                  (org-element-map
+                      (org-element-parse-buffer) 'headline
+                    #'(lambda (item)
+                        (org-element-property :level item))))))
+         (indent (max indent min-indent)))
+
+  (dotimes (n org-indent--deepest-level)
+    (aset org-indent--heading-line-prefixes n
+          (make-string
+           (min indent (max 0 (- indent 1 n))) ?\s))
+    (aset org-indent--inlinetask-line-prefixes n
+          (make-string indent ?\s))
+    (aset org-indent--text-line-prefixes n
+          (make-string indent ?\s)))))
+
+
+
+(define-minor-mode nano/writer-mode
+  "Minor mode which makes writing a lot nicer by moving all the headllines to the left."
+  :init-value nil
+  :global nil
+  ;; Faces
+  (face-remap-add-relative 'org-level-1
+                           :height 180)
+  (face-remap-add-relative 'org-level-2
+                            :height 160)
+  (face-remap-add-relative 'org-level-3
+                            :height 150)
+  (face-remap-add-relative 'org-document-info
+                           :inherit 'nano-face-faded)
+  (face-remap-add-relative 'org-document-title
+                           :foreground nano-color-foreground
+                           :family "Roboto Slab"
+                           :height 200
+                           :weight 'medium)
+  ;; hide title / author ... keywords
+  (setq-local org-hidden-keywords '(title author date startup))
+
+  ;; Header line
+  (setq header-line-format nil)
+
+  ;; Layout
+  (setq fill-column 72)
+  (setq-default line-spacing 1)
+
+  ;; Indentation
+  (setq org-startup-folded nil)
+  (org-indent-mode)
+  (setq org-level-color-stars-only nil)
+  (setq org-hide-leading-stars nil)
+  (advice-add 'org-indent--compute-prefixes :override
+              #'writer-mode--compute-prefixes)
+
+  ;; Numbering
+  (setq org-num-skip-unnumbered t)
+  (setq org-num-skip-footnotes t)
+  (setq org-num-max-level 2)
+  (setq org-num-face nil)
+  (org-num-mode)
+  (setq org-num-format-function 'writer-mode--num-format))
+
+;;;;;;;;
+;;
+;; org-latex-export
+;;
+;;;;;;;;
+
+(with-eval-after-load 'ox-latex
+   (add-to-list 'org-latex-classes
+                '("tufte"
+                  "\\documentclass{tufte-book}"
+                  ("\\part{%s}" . "\\part*{%s}")
+                  ("\\chapter{%s}" . "\\chapter*{%s}")
+                  ("\\section{%s}" . "\\section*{%s}")
+                  ("\\subsection{%s}" . "\\subsection*{%s}")
+                  ("\\subsubsection{%s}" . "\\subsubsection*{%s}")))
+   (add-to-list 'org-latex-classes
+                '("memoir"
+                  "\\documentclass{memoir}"
+                  ("\\part{%s}" . "\\part*{%s}")
+                  ("\\chapter{%s}" . "\\chapter*{%s}")
+                  ("\\section{%s}" . "\\section*{%s}")
+                  ("\\subsection{%s}" . "\\subsection*{%s}")
+                  ("\\subsubsection{%s}" . "\\subsubsection*{%s}"))
+                ))
+
+#+END_SOURCE
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+;     Keyboard shortcuts
+;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+#+BEGIN_SOURCE emacs-lisp :tangle yes
+(map! :leader
+      (:prefix ("r" . "roam")
+       :desc "find file"            "f"   #'org-roam-find-file
+       :desc "highlight"            "r"   #'org-noter-insert-note
+       :desc "start taking notes"   "s"   #'org-noter
+       :desc "toggle buffer"        "b"   #'org-roam-buffer-toggle-display
+       :desc "insert note"          "i"   #'org-roam-insert
+       :desc "server"               "g"   #'org-roam-server
+       :desc "quit notes"           "q"   #'org-noter-kill-session
+       :desc "tag (roam)"           "t"   #'org-roam-tag-add
+       :desc "tag (org)"            "o"   #'org-set-tags-command
+       :desc "pomodoro"             "p"   #'org-pomodoro
+       :desc "change nano-theme"    "n"   #'nano-change-theme
+       :desc "rebuid db"            "d"   #'org-roam-db-build-cache
+       :desc "cite"                 "c"   #'helm-bibtex
+       :desc "writing-mode"         "w"   #'thomas/writing-mode
+       )
+      (:prefix ("d" . "GTD")
+       :desc  "process inbox" "p"#'org-gtd-process-inbox
+       :desc  "agenda list" "a"#'org-agenda-list
+       :desc  "capture" "c"#'org-gtd-capture
+       :desc  "show next" "n" #'org-gtd-show-all-next
+       :desc  "show stuck project" "s" #'org-gtd-show-stuck-projects)
+      )
+
+#+END_SOURCE
+
+#+BEGIN_SOURCE emacs-lisp :tangle yes
+(evil-workman-global-mode t)
+#+END_SOURCE

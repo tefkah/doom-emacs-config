@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: mathbb
+# key: bb
+# --
+\mathbb{$1} $0

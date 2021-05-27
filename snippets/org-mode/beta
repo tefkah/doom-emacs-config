@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: beta
+# key: b
+# --
+\beta $0

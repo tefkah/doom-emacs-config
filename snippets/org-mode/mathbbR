@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: mathbbR 
+# key: bbr
+# --
+\mathbb{R} $0 

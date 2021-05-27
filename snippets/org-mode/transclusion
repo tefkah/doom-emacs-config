@@ -1,0 +1,6 @@
+# -*- mode: snippet -*-
+# name: transclusion 
+# key: tr
+# --
+#+transclude: t
+$0

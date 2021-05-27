@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: pi
+# key: p
+# --
+\pi $0

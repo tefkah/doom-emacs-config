@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# name: tcolorblock 
+# key: ctc
+# --
+#+attr_latex: :options [title=$2]
+#+begin_tcolorbox
+$1
+#+end_tcolorbox
+$0
