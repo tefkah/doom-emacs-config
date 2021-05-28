@@ -56,7 +56,7 @@
 
    NANO
 
-   #+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp :tangle no
 (defvar nano-theme-light-var t)
 (require 'disp-table)
 (require 'nano-theme-dark)
