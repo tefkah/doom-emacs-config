@@ -1,4 +1,4 @@
-#+title:doom-emacs config
+#+title:Doom-emacs config
 * Basic stuff
 
 

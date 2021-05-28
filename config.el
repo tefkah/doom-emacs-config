@@ -68,7 +68,7 @@
                                  :order 90)
                           (:discard (:tag ("Chore" "Routine" "Daily")))))))))))
 
-        ;;;;;;;;;;;;;
+;;;;;;;;;;;;;
 ;;;
 ;;; Other
 ;;;
