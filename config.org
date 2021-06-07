@@ -1,6 +1,8 @@
 #+title:Doom-emacs config
 * Basic stuff
-
+#+begin_src emacs-lisp :tangle yes
+(add-to-list 'load-path "~/.config/doom/elisp")
+#+end_src
 
   Yooooooooooo let's go
 
@@ -15,7 +17,6 @@
 ;; clients, file templates and snippets.
 (setq user-full-name "Thomas F. K. Jorna"
       user-mail-address "jorna@jtrialerror.com")
-
 #+end_src
 ** ...
 #+begin_src emacs-lisp :tangle yes
@@ -28,18 +29,6 @@
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
 (setq display-line-numbers-type t)
-(defcustom display-line-numbers-exempt-modes '(vterm-mode eshell-mode shell-mode term-mode ansi-term-mode org-mode)
-  "Major modes on which to disable the linum mode, exempts them from global requirement"
-  :group 'display-line-numbers
-  :type 'list
-  :version "green")
-
-(defun display-line-numbers--turn-on ()
-  "turn on line numbers but excempting certain majore modes defined in `display-line-numbers-exempt-modes'"
-  (if (and
-       (not (member major-mode display-line-numbers-exempt-modes))
-       (not (minibufferp)))
-      (display-line-numbers-mode)))
 
 ;; Here are some additional functions/macros that could help you configure Doom:
 ;;
@@ -53,61 +42,71 @@
 
 
 ** Theme
+*** Nano
 
-   NANO
+     Basic things you can keep in place without being locked into nano
+  #+begin_src emacs-lisp :tangle no
+(setq nano-font-family-monospaced "Overpass Mono")
+(setq nano-font-family-proportional "Noto Serif")
+(setq nano-font-size 13)
 
-#+begin_src emacs-lisp :tangle no
-(defvar nano-theme-light-var t)
+        ;(defvar nano-theme-light-var t)
 (require 'disp-table)
 (require 'nano-theme-dark)
 (require 'nano-theme-light)
-(nano-theme-set-light)
 ;(require 'nano-layout)
 ;(require 'nano-base-colors)
 (require 'nano-faces)
 (nano-faces)
+  #+end_src
+
+  The real fun begins here
+  #+begin_src emacs-lisp :tangle no
 (require 'nano-theme)
 (nano-theme)
 (require 'nano-modeline)
 ;(require 'nano-writer)
 ;;(nano-theme)
 ;;
+  #+end_src
+
+  Obsolete function due to nano-toggle-face
+  #+begin_src emacs-lisp :tangle no
 
 (defun nano-change-theme-dark ()
   (interactive)
+  (progn
   (nano-theme-set-dark)
   (nano-faces)
-  (nano-theme))
+  (nano-theme)))
 
 (defun nano-change-theme-light ()
   (interactive)
+  (progn
   (nano-theme-set-light)
   (nano-faces)
-  (nano-theme))
+  (nano-theme)))
 
 (defun nano-change-theme ()
   (interactive)
   (if nano-theme-light-var (nano-change-theme-dark) (nano-change-theme-light))
   (setq nano-theme-light-var (not nano-theme-light-var)))
-   #+end_src
+  #+end_src
 
-I always want this, regardless of whether I am uisng nano or not.
+  I always want this, regardless of whether I am uisng nano or not.
 
-#+begin_src emacs-lisp :tangle yes
+  #+begin_src emacs-lisp :tangle yes
 (setq default-frame-alist
       (append (list
 	       ;; '(font . "Roboto Mono Emacs Regular:size=14")
 	       '(min-height . 1)  '(height     . 45)
 	       '(min-width  . 1) '(width      . 81)
                '(vertical-scroll-bars . nil)
-               '(internal-border-width . 24)
+               '(internal-border-width . 40)
                '(left-fringe    . 0)
                '(right-fringe   . 0)
                '(tool-bar-lines . 0)
                '(menu-bar-lines . 0))))
-
-
-
 
 
 
@@ -120,12 +119,21 @@ I always want this, regardless of whether I am uisng nano or not.
 
 ;;
 ;;; Packages
+  #+end_src
+*** Doom
+   I'm either using nano or doom-theme, this is the latter
+   #+begin_src emacs-lisp :tangle yes
+(setq doom-theme 'doom-plain)
+   #+end_src
+
+To set the fringes how i want them
+#+begin_src emacs-lisp :tangle yes
+(add-hook! 'solaire-mode-hook
+  ;(set-face-attribute 'solaire-fringe-face nil :background (face-background 'solaire-hl-line-face))
+  (set-face-attribute 'fringe nil :background (face-background 'solaire-default-face))
+  )
 #+end_src
 
-I'm either using nano or doom-theme, this is the latter
-#+begin_src emacs-lisp :tangle yes
-(setq doom-theme 'doom-plain)
-#+end_src
 ** Fonts
 
 #+begin_src emacs-lisp :tangle yes
@@ -139,30 +147,23 @@ I'm either using nano or doom-theme, this is the latter
 (setq doom-font (font-spec :family "Fira Code" :size 15 :weight 'semi-light)
        doom-variable-pitch-font (font-spec :family "Noto Serif" :style "Regular" :size 18 :weight 'regular))
 
-(use-package! mixed-pitch
-  :hook (org-mode . mixed-pitch-mode)
-  :config
-  (setq mixed-pitch-set-heigth t)
-  (set-face-attribute 'variable-pitch nil :height 1.3 :family "Noto Serif" :weight 'regular))
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You an either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
-
 #+end_src
 
 ** Modeline
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp :tangle no
 (defvar +modeline--old-bar-height nil)
 ;;;###autoload
 (defun +modeline-resize-for-font-h ()
   "Adjust the modeline's height when the font size is changed by
 `doom/increase-font-size' or `doom/decrease-font-size'.
-
 Meant for `doom-change-font-size-hook'."
   (unless +modeline--old-bar-height
     (setq +modeline--old-bar-height doom-modeline-height))
   (let ((default-height +modeline--old-bar-height)
-        (scale (or (frameparameter nil 'font-scale) 0)))
+        (scale (or (frame-parameter nil 'font-scale) 0)))
     (setq doom-modeline-height
           (if (> scale 0)
               (+ default-height (* scale doom-font-increment))
@@ -249,7 +250,6 @@ Meant for `doom-change-font-size-hook'."
   (defadvice! +modeline--inhibit-modification-hooks-a (orig-fn &rest args)
     :around #'ws-butler-after-save
     (with-silent-modifications (apply orig-fn args))))
-
 #+end_src
 
 #+begin_src emacs-lisp :tangle no
@@ -273,7 +273,7 @@ Meant for `doom-change-font-size-hook'."
 #+begin_src elisp :tangle yes
 (after! doom-modeline
   (setq doom-modeline-enable-word-count t
-        doom-modeline-header-line t
+        doom-modeline-header-line nil
         ;doom-modeline-hud nil
         doom-themes-padded-modeline t
         doom-flatwhite-brighter-modeline nil
@@ -287,7 +287,7 @@ Meant for `doom-change-font-size-hook'."
 #+end_src
 
 Trying to make my own thing work
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp :tangle yes
 (after! doom-modeline
   (doom-modeline-def-modeline 'main
     '(bar matches buffer-info vcs word-count)
@@ -301,37 +301,289 @@ Trying to make my own thing work
 
     Very cool indicator of where you are in the buffer. Works not that well with `doom-modeline` though.
 
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp :tangle no
 (use-package! mlscroll
+  :preface
+  ;(setq mlscroll-mode-line-font-width 9)
   :init
+  (message "Init mode line %s" 'mode-line)
   (setq mlscroll-right-align nil)
   (add-to-list 'mode-line-misc-info '(:eval (mlscroll-mode-line)) 'append)
   (setq mlscroll-width-chars 15)
   (setq mlscroll-border 6)
+  (setq mlscroll-in-color "#555555")
+  ;(setq mlscroll-mode-line-font-width 9)
   :config
-  (mlscroll-mode 1))
-  #+end_src
-
-  #+RESULTS:
-  : t
-
+  (mlscroll-mode 1)
+  ;(setq mlscroll-mode-line-font-with 9)
+  )
+#+end_src
 
 
+
+** Startup
+
+   #+begin_src emacs-lisp :tangle yes
+(use-package! dashboard
+  :init
+  (dashboard-setup-startup-hook)
+  ;(setq initial-buffer-choice
+  ;      (lambda () (get-buffer "*dashboard*")))
+  :config
+  (setq dashboard-center-content t
+        dashboard-banner-logo-title "Emacs"
+        dashboard-startup-banner 'logo
+        dashboard-set-file-icons t
+        dashboard-set-heading-icons t
+        dashboard-set-init-info t
+        dashboard-week-agenda t
+        ))
+   #+end_src
+** Cursor
+#+begin_src emacs-lisp :tangle no
+;(after! org
+;  (require 'pulse-cursor))
+;
+;(add-hook! 'org-mode-hook (pulse-cursor-mode))
+
+
+(require 'pulse)
+
+(defface pulse-cursor-overlay-face1
+  '((((class color) (background light))
+     :background (face-background 'default))
+    (((class color) (background dark))
+     :background (face-background 'default)))
+  "")
+
+(defvar pulse-cursor-idle-timer nil
+  "Timer started after `pulse-cursor-delay' seconds of Emacs idle time.
+The function `pulse-cursor-start' is called when the timer fires.")
+
+(defvar pulse-cursor-timer nil
+  "Timer started from `pulse-cursor-start'.
+This timer calls `pulse-cursor-timer-function' every
+`pulse-cursor-interval' seconds.")
+
+(defgroup pulse-cursor nil
+  "Displaying text cursors."
+  :version "21.1"
+  :group 'frames)
+
+(defcustom pulse-cursor-delay 0.5
+  "Seconds of idle time before the first blink of the cursor.
+Values smaller than 0.2 sec are treated as 0.2 sec."
+  :type 'number
+  :group 'pulse-cursor
+  :set (lambda (symbol value)
+         (set-default symbol value)
+         (when pulse-cursor-idle-timer (pulse-cursor--start-idle-timer))))
+
+(defcustom pulse-cursor-interval 0.5
+  "Length of cursor blink interval in seconds."
+  :type 'number
+  :group 'pulse-cursor
+  :set (lambda (symbol value)
+         (set-default symbol value)
+         (when pulse-cursor-timer (pulse-cursor--start-timer))))
+
+(defcustom pulse-cursor-blinks 10
+  "How many times to blink before using a solid cursor on NS, X, and MS-Windows.
+Use 0 or negative value to blink forever."
+  :version "24.4"
+  :type 'integer
+  :group 'pulse-cursor)
+
+(defvar pulse-cursor-blinks-done 1
+  "Number of blinks done since we started blinking on NS, X, and MS-Windows.")
+
+(defun pulse-cursor--start-idle-timer ()
+  "Start the `pulse-cursor-idle-timer'."
+  (when pulse-cursor-idle-timer (cancel-timer pulse-cursor-idle-timer))
+  (setq pulse-cursor-idle-timer
+        ;; The 0.2 sec limitation from below is to avoid erratic
+        ;; behavior (or downright failure to display the cursor
+        ;; during command execution) if they set pulse-cursor-delay
+        ;; to a very small or even zero value.
+        (run-with-idle-timer (max 0.2 pulse-cursor-delay)
+                             :repeat #'pulse-cursor-start)))
+
+(defun pulse-cursor--start-timer ()
+  "Start the `pulse-cursor-timer'."
+  (when pulse-cursor-timer (cancel-timer pulse-cursor-timer))
+  (setq pulse-cursor-timer
+        (run-with-timer pulse-cursor-interval pulse-cursor-interval
+                        #'pulse-cursor-timer-function)))
+
+(defun pulse-cursor-start ()
+  "Timer function called from the timer `pulse-cursor-idle-timer'.
+This starts the timer `pulse-cursor-timer', which makes the cursor blink
+if appropriate.  It also arranges to cancel that timer when the next
+command starts, by installing a pre-command hook."
+  (when (null pulse-cursor-timer)
+    ;; Set up the timer first, so that if this signals an error,
+    ;; pulse-cursor-end is not added to pre-command-hook.
+    (setq pulse-cursor-blinks-done 1)
+    (pulse-cursor--start-timer)
+    (add-hook 'pre-command-hook 'pulse-cursor-end)
+    (internal-show-cursor nil nil)
+    ))
+
+(defun pulse-cursor-timer-function ()
+  "Timer function of timer `pulse-cursor-timer'."
+
+  (internal-show-cursor nil (not (internal-show-cursor-p)))
+
+  (pulse-momentary-highlight-region (point) (+ 1 (point)) 'pulse-cursor-overlay-face1)
+  ;;(pulse-momentary-highlight-region (point-min) (point-max))
+
+  ;; Suspend counting blinks when the w32 menu-bar menu is displayed,
+  ;; since otherwise menu tooltips will behave erratically.
+  (or (and (fboundp 'w32--menu-bar-in-use)
+	   (w32--menu-bar-in-use))
+      (setq pulse-cursor-blinks-done (1+ pulse-cursor-blinks-done)))
+  ;; Each blink is two calls to this function.
+  (when (and (> pulse-cursor-blinks 0)
+             (<= (* 2 pulse-cursor-blinks) pulse-cursor-blinks-done))
+    (pulse-cursor-suspend)
+    (add-hook 'post-command-hook 'pulse-cursor-check)))
+
+(defun pulse-cursor-end ()
+  "Stop cursor blinking.
+This is installed as a pre-command hook by `pulse-cursor-start'.
+When run, it cancels the timer `pulse-cursor-timer' and removes
+itself as a pre-command hook."
+  (remove-hook 'pre-command-hook 'pulse-cursor-end)
+
+  (internal-show-cursor nil t)
+
+  (when pulse-cursor-timer
+    (cancel-timer pulse-cursor-timer)
+    (setq pulse-cursor-timer nil)))
+
+(defun pulse-cursor-suspend ()
+  "Suspend cursor blinking.
+This is called when no frame has focus and timers can be suspended.
+Timers are restarted by `pulse-cursor-check', which is called when a
+frame receives focus."
+  (pulse-cursor-end)
+  (when pulse-cursor-idle-timer
+    (cancel-timer pulse-cursor-idle-timer)
+    (setq pulse-cursor-idle-timer nil)))
+
+(defun pulse-cursor--should-blink ()
+  "Determine whether we should be blinking.
+Returns whether we have any focused non-TTY frame."
+  (and pulse-cursor-mode
+       (let ((frame-list (frame-list))
+             (any-graphical-focused nil))
+         (while frame-list
+           (let ((frame (pop frame-list)))
+             (when (and (display-graphic-p frame) (frame-focus-state frame))
+               (setf any-graphical-focused t)
+               (setf frame-list nil))))
+         any-graphical-focused)))
+
+(defun pulse-cursor-check ()
+  "Check if cursor blinking shall be restarted.
+This is done when a frame gets focus.  Blink timers may be
+stopped by `pulse-cursor-suspend'.  Internally calls
+`pulse-cursor--should-blink' and returns its result."
+  (let ((should-blink (pulse-cursor--should-blink)))
+    (when (and should-blink (not pulse-cursor-idle-timer))
+      (remove-hook 'post-command-hook 'pulse-cursor-check)
+      (pulse-cursor--start-idle-timer))
+    should-blink))
+
+(defun pulse-cursor--rescan-frames (&optional _ign)
+  "Called when the set of focused frames changes or when we delete a frame."
+  (unless (pulse-cursor-check)
+    (pulse-cursor-suspend)))
+
+(define-minor-mode pulse-cursor-mode
+  "Toggle cursor blinking (Blink Cursor mode).
+If the value of `pulse-cursor-blinks' is positive (10 by default),
+the cursor stops blinking after that number of blinks, if Emacs
+gets no input during that time.
+See also `pulse-cursor-interval' and `pulse-cursor-delay'.
+This command is effective only on graphical frames.  On text-only
+terminals, cursor blinking is controlled by the terminal."
+  :init-value  (not (or noninteractive
+		       no-blinking-cursor
+		       (eq system-type 'ms-dos)
+		       (not (display-blink-cursor-p))))
+  ;:initialize 'custom-initialize-delay
+  :group 'pulse-cursor
+  :global t
+  (pulse-cursor-suspend)
+  (remove-hook 'after-delete-frame-functions #'pulse-cursor--rescan-frames)
+  (remove-function after-focus-change-function #'pulse-cursor--rescan-frames)
+  (when pulse-cursor-mode
+    (add-function :after after-focus-change-function #'pulse-cursor--rescan-frames)
+    (add-hook 'after-delete-frame-functions #'pulse-cursor--rescan-frames)
+    (pulse-cursor--start-idle-timer)))
+
+(setq blink-cursor-alist '((box . nil)))
+(setq pulse-cursor-interval 0.5)
+(setq pulse-cursor-blinks 0)
+(setq pulse-delay 0.015)
+(setq pulse-iterations 20)
+;(pulse-cursor-mode +1)
+(when nil
+  (pulse-cursor-mode +1)
+  (pulse-cursor-mode -1)
+  (blink-cursor-mode +1)
+  (blink-cursor-mode -1)
+
+  (internal-show-cursor nil t)
+  (internal-show-cursor nil nil)
+
+  (blink-cursor-mode +1)
+  (setq blink-cursor-alist '((box . hollow)))
+  (setq blink-cursor-interval 0.25)
+  (setq blink-cursor-blinks 0)
+  )
+#+end_src
+
+#+begin_src emacs-lisp :tangle yes
+(setq blink-cursor-alist '((box . box)))
+(setq blinking-cursor-mode 1)
+#+end_src
 * Org-Mode customization
 
-** ZETTELKASTEN
+
+Allows you to jump in and out of latex fragments without using `C-c C-x C-l` all the time, beautiful.
 #+begin_src emacs-lisp :tangle yes
-
-
 (use-package! org-fragtog
   :after org
   :hook (org-mode . org-fragtog-mode)
   )
 
+#+end_src
+
+Org-fragtog for everything else.
+#+begin_src emacs-lisp :tangle yes
+(use-package! org-appear
+  :after org
+  :hook (org-mode . org-appear-mode))
+
+#+end_src
+
+Buggy yet beautiful transclusion of org-content from another file in the current buffer. Very cool that this is possible, but I don't use it consistently as the "code" is kind of a bitch to write and gets rid of org-roam links.
+#+begin_src emacs-lisp :tangle yes
 (use-package! org-transclusion
   :after org-roam
   )
+#+end_src
 
+Having zero-width spaces can be very useful /sometimes/​!
+#+begin_src emacs-lisp :tangle yes
+
+(map! :map org-mode-map
+:nie "C-M-SPC" (cmd! (insert "\u200B")))
+#+end_src
+#+begin_src emacs-lisp :tangle yes
+(alert "AAA" :style 'message)
 #+end_src
 
 ** Org-roam
@@ -618,17 +870,40 @@ nroam puts the org-roam buffer on the bottom, much more natural and less obstrus
 #+end_src
 ** Hooks
 
+*** Hook to get rid of stars
+
+You know what I hate? Organized lists.
+No but when I'm writing I don't want org's usual indentation and stars and all that bullshit, I want it to look like a wordprocessor, so no stars!
+
 #+begin_src emacs-lisp :tangle yes
+(defun org-mode-remove-stars ()
+  (font-lock-add-keywords
+   nil
+   '(("^\\*+ "
+      (0
+       (prog1 nil
+         (put-text-property (match-beginning 0) (match-end 0)
+                            'invisible t)))))))
+
+(add-hook! 'org-mode-hook #'org-mode-remove-stars)
+#+end_src
+
+*** Yeah I don't know where to put this
+#+begin_src emacs-lisp :tangle yes
+  ;; hide title / author ... keywords
+
 ;;; Ugly org hooks
 (defun nicer-org ()
+  (progn
   (+org-pretty-mode 1)
   (mixed-pitch-mode 1)
   (hl-line-mode -1)
   (display-line-numbers-mode -1)
   (olivetti-mode 1)
   (org-num-mode 1)
+  (org-superstar-mode -1)
   ;(org-indent-mode -1)
-  )
+  ))
 
 (add-hook! 'org-mode-hook  #'nicer-org)
 
@@ -642,13 +917,24 @@ nroam puts the org-roam buffer on the bottom, much more natural and less obstrus
 (after! org
   (setq org-startup-with-latex-preview 1
         org-startup-with-inline-images 1
-        org-hide-leading-stars 1
+        ;org-hide-leading-stars 1
         org-startup-indented nil
-        org-superstar-headline-bullets-list`("\u200b")
+        ;org-superstar-headline-bullets-list`("\u200b")
   ;      org-startup-folded nil
         ;org-startup-numerated 1
-        org-pretty-entities 1)
-  (custom-set-faces!
+        org-hidden-keywords '(title author date startup roam_tags)
+        org-pretty-entities 1
+        org-num-max-level 3
+        header-line-format nil))
+
+
+#+end_src
+*** Custom faces
+
+A lil bigger. No a lil smaller. Peeerrrfect.
+#+begin_src emacs-lisp :tangle yes
+(after! org
+(custom-set-faces!
   '((org-block) :background nil)
   )
   (defface redd
@@ -656,15 +942,39 @@ nroam puts the org-roam buffer on the bottom, much more natural and less obstrus
       :foreground "red"))
     "Red."
     :group 'basic-faces)
-  (custom-set-faces! '(org-level-1 :height 1.6 :weight bold :slant normal) '(org-level-2 :height 1.4 :weight regular :slant normal) '(org-level-3 :height 1.3 :weight regular :slant italic))
-  (setq org-emphasis-alist
+  (custom-set-faces!
+    ;'(org-document-title :height 1.6 :weight bold)
+    '(org-level-1 :height 1.3 :weight extrabold :slant normal)
+    '(org-level-2 :height 1.2 :weight bold :slant normal)
+    '(org-level-3 :height 1.1 :weight regular :slant normal)
+    ;'(org-document-info  :inherit 'nano-face-faded)
+    '(org-document-title   ;:foreground ,(doom-color 'black)
+                           :family "Noto Serif"
+                           :height 250
+                           :weight medium)))
+#+end_src
+*** emphsis faces
+
+I want to be able to do some kind of cruse highlighting, so = becomes =red=.
+#+begin_src emacs-lisp :tangle yes
+(after! org
+(setq org-emphasis-alist
         '(("*" (bold))
           ("/" italic)
           ("_" underline)
           ("=" redd)
-          ("~" (:background "deep sky blue" :foreground "MidnightBlue"))
-          ("+" (:strike-through t))))
-  (setq org-ellipsis " ▾ ")
+          ("~" code)
+          ("+" (:strike-through t)))))
+#+end_src
+
+Ideally I would be able to add my own custom bullshit in here, but I don't know how to do that.
+
+*** Ligatures
+
+    Yns make them pretty
+#+begin_src emacs-lisp :tangle yes
+        (after! org
+(setq org-ellipsis " ▾ ")
   (appendq! +ligatures-extra-symbols
           `(:checkbox      "☐"
             :pending       "◼"
@@ -674,7 +984,7 @@ nroam puts the org-roam buffer on the bottom, much more natural and less obstrus
             :ellipses      "…"
             :arrow_right   "→"
             :arrow_left    "←"
-            :title         "𝙏"
+            :title         nil
             :subtitle      "𝙩"
             :author        "𝘼"
             :date          "𝘿"
@@ -704,7 +1014,8 @@ nroam puts the org-roam buffer on the bottom, much more natural and less obstrus
             :priority_b   ,(propertize "⬆" 'face 'all-the-icons-orange)
             :priority_c   ,(propertize "■" 'face 'all-the-icons-yellow)
             :priority_d   ,(propertize "⬇" 'face 'all-the-icons-green)
-            :priority_e   ,(propertize "❓" 'face 'all-the-icons-blue)))
+            :priority_e   ,(propertize "❓" 'face 'all-the-icons-blue)
+            :roam_tags ""))
 (set-ligatures! 'org-mode
   :merge t
   :checkbox      "[ ]"
@@ -745,7 +1056,8 @@ nroam puts the org-roam buffer on the bottom, much more natural and less obstrus
   :priority_b    "[#B]"
   :priority_c    "[#C]"
   :priority_d    "[#D]"
-  :priority_e    "[#E]")
+  :priority_e    "[#E]"
+  :roam_tags     "#+roam_tags:")
 (plist-put +ligatures-extra-symbols :name "⁍")
 )
 
@@ -757,16 +1069,9 @@ nroam puts the org-roam buffer on the bottom, much more natural and less obstrus
 ** Getting Things Done
 
    Oh yeah this is definitely working for me I've definitely changed as a person.
+*** GTD package
+    It's pretty good, but it doesn't do my organizing for me sadly.
   #+begin_src emacs-lisp :tangle yes
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;
-;      Getting Things Done
-;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (use-package! org-gtd
   :after org
   :config
@@ -793,6 +1098,7 @@ nroam puts the org-roam buffer on the bottom, much more natural and less obstrus
 #+end_src
 
 *** Set agenda files
+Because you can't trust ~custom.el~
 #+begin_src emacs-lisp :tangle yes
 
 (setq org-agenda-files '("~/OneDrive/org-roam/inbox" "~/OneDrive/org-roam/actionable.org"
@@ -802,6 +1108,7 @@ nroam puts the org-roam buffer on the bottom, much more natural and less obstrus
 
 *** Org capture Templates
 
+Set some capture templates, which I rarely use tbrqhwy
 #+begin_src emacs-lisp :tangle yes
 (after! org
 (setq org-capture-templates `(("i" "Inbox"
@@ -822,7 +1129,11 @@ nroam puts the org-roam buffer on the bottom, much more natural and less obstrus
 )
 #+end_src
 *** Org-super agenda
- #+begin_src elisp
+
+Why yes, I also copied this one example from the ~org-super-agenda~ github, how could you tell?
+
+This does not work nearly as well as I would like it to, like, utility wise. Way too long, way too much information, bubububuh. I want more of a calendar than an agenda I think.
+ #+begin_src emacs-lisp :tangle yes
 (use-package! org-super-agenda
   :hook (org-agenda-mode . org-super-agenda-mode)
 )
@@ -897,43 +1208,137 @@ nroam puts the org-roam buffer on the bottom, much more natural and less obstrus
 
 *** Notifications
 
-I want notifications to work so bad but it just is working :(
-
+I want notifications to work so bad but it just isn't working :(
+Seems like ~alert~ is not working, should fix that at some point.
 #+begin_src emacs-lisp :tangle no
 (use-package! org-notifications
   :init (org-notifications-start) )
 #+end_src
 
-** Writing
+** Nice writing environment for big babies
+Nice big border with the color of the fringe
+#+begin_src emacs-lisp :tangle yes
+(setq default-frame-alist
+      (append (list
+	       ;; '(font . "Roboto Mono Emacs Regular:size=14")
+	       '(min-height . 1)  '(height     . 45)
+	       '(min-width  . 1) '(width      . 81)
+               '(vertical-scroll-bars . nil)
+               '(internal-border-width . 40)
+               '(left-fringe    . 0)
+               '(right-fringe   . 0)
+               '(tool-bar-lines . 0)
+               '(menu-bar-lines . 0))))
 
-I want thing to be in the middle.
+(add-hook! 'solaire-mode-hook (set-face-background 'internal-border (face-background 'fringe)))
+
+(set-frame-parameter nil 'internal-border-width 60)
+#+end_src
+
+*** Paper-like header/mode-line
+Lil' minor mode which gives you a nice distraction free header and footer. At the moment its automatically enabled in org-mode, but I would like it to only be enabled in "writing" buffers, not sure how to implement that yet though.
+
+#+begin_src emacs-lisp :tangle yes
+(defvar writing-header--default-format header-line-format
+  "Storage for the default `mode-line-format'.
+So it can be restored when 'writer-header-line-mode' is disabled.")
+
+(defvar writing-modeline--default-format mode-line-format)
+
+(define-minor-mode writing-header-line-mode
+  "Adds a bar with the same color as the fringe as the header-line.
+Imitates the look of wordprocessors a bit."
+  :init-value nil
+  :global nil
+  (if writing-header-line-mode
+      (progn
+      (setq header-line-format
+            (concat
+             (propertize " " 'display (list 'space :width 'left-fringe) 'face 'fringe)
+             (propertize " " 'display (list 'space :width 'left-margin) 'face (list (list :height 400) 'default))
+             (propertize " " 'display (list 'space :width 'text) 'face (list (list :height 400) 'default))
+             ;(propertize (format " %dW" (count-words (point-min) (point-max))) 'face 'default)
+             (propertize " " 'display (list 'space :width 'left-margin) 'face (list (list :height 400) 'default))
+    ;;(propertize (format " %dW" (count-words (point-min) (point-max))) 'face 'fringe)
+   ;; '("" mode-line-misc-info)
+             (propertize " " 'display (list 'space :width 'left-fringe) 'face 'fringe))) ;
+        (setq mode-line-format header-line-format))
+    (setq header-line-format writing-header--default-format
+          mode-line-format writing-modeline--default-format)))
+#+end_src
+
+*** Olivetti, my love
+I want thing to be in the middle, and  with olivetti mode the fringes become larger so it looks like a word processor, fantastic!
 
 #+begin_src emacs-lisp :tangle yes
 (use-package! olivetti
   :after org-roam
+  :hook (olivetti-mode . writing-header-line-mode)
   :config
-    (setq olivetti-minimum-body-width 60
-          olivetti-body-with 80
-  )
-
+    (setq olivetti-min-body-width 50
+          olivetti-body-width 80
+          olivetti-style t ; fantastic new layout
+          olivetti-margin-width 12)
+    (add-hook! 'olivetti-mode-hook (window-divider-mode -1)))
 #+end_src
-
-Pretty cool: focus only the paragraph you're looking at. Don't really use it though.
-#+begin_src emacs-lisp :tangle yes
+*** STAY FOCUSED
+ Pretty cool: focus only the paragraph you're looking at. Don't really use it though.
+ #+begin_src emacs-lisp :tangle yes
 (use-package! focus
   :after org-roam
   :config
         (add-to-list 'focus-mode-to-thing '(org-mode . paragraph))
   )
 ;(require 'nano-writer)
+ #+end_src
+*** My eyes, they don't work so good no more
 
 
+ Increase the font-size a bit in org-mode
+
+ FIXME: This is not how you do that dipshit
+ #+begin_src emacs-lisp :tangle no
+(add-hook! 'org-mode-hook (doom/increase-font-size 1))
+ #+end_src
+** Custom org-mode profiles
+
+I would like org-mode to look and behave differently depending on what kind of note I'm visiting. Sometimes I want to write in an undistracted environment, sometimes I want to take notes and see a lot of things, sometimes I am configuring this thing and other times I'm going through my tasks: there's no real reason for org to look the same for all of these, and in fact that will probably end up more distracting than anything.
+
+I'm not sure what the best way of going about this is, but I'm thinking a minor mode will do.
+
+#+begin_src emacs-lisp :tangle no
+(define-minor-mode org-profile-mode
+  "Sets a profile of hooks and minor-modes depending on the file-name."
+  :init-value nil
+  :global t
+(when org-profile-mode
+  (when (eq major-mode 'org-mode)
+    (cond
+      ((string-match-p "[0-9]\\{14\\}" buffer-file-name)
+       (message "Note buffer"))
+      ((string-match-p "config.org" buffer-file-name)
+       (message "Config buffer"))
+      ((string-match-p "chapter" buffer-file-name)
+       (message "chapter buffer"))
+      ((org-agenda-file-p buffer-file-name)
+       (message "org-agenda buffer")
+        ))
+  )))
 #+end_src
+
+Something like: if file name contains YYYYMMDD-whatever.org, notes profile.
+If file name is in org-agedenda, GTD profile.
+Else, writing? No, would be better to have writing be a separate tag/file name thing.
+
+You should be able to indefinitely add profiles. This could be a big list, but that would get kind of hard and I don't know how those work.
+
+For now I can just hard code it, it's fine.
+
 
 ** Custom Minor Modes
 
    Guaranteed not stolen.
-
+Thank you Prot
 #+begin_src emacs-lisp :tangle yes
 ;;;;;
 
@@ -991,7 +1396,7 @@ NO line numbers.
 #+end_src
 
 Throw everything together, but in a bad way.
-
+I don't use this anymore, but it did work, except for nano's writing mode, which was very hacky.
 #+begin_src emacs-lisp :tangle no
 (define-minor-mode thomas/writing-mode
   "Toggle mixed-pitch-mode, center-text, scroll-center and disable line numbers, in writing modes."
@@ -1042,9 +1447,9 @@ Throw everything together, but in a bad way.
 
 #+end_src
 
-** Nano writer mode implementation, not used atm
+*** Nano writer mode implementation, not used atm
 
-#+begin_src elisp :tangle no
+  #+begin_src elisp :tangle no
 (defun writer-mode--num-format (numbering)
   "Alternative numbering format for org-num.
 First level: 1 | xxx
@@ -1114,7 +1519,7 @@ etc."
   (face-remap-add-relative 'org-document-info
                            :inherit 'nano-face-faded)
   (face-remap-add-relative 'org-document-title
-                           :foreground nano-color-foreground
+                           :foreground (face-foreground 'default)
                            :family "Roboto Slab"
                            :height 200
                            :weight 'medium)
@@ -1139,7 +1544,7 @@ etc."
   ;; Numbering
   (setq org-num-skip-unnumbered t)
   (setq org-num-skip-footnotes t)
-  (setq org-num-max-level 2)
+  (setq org-num-max-level 3)
   (setq org-num-face nil)
   (org-num-mode)
   (setq org-num-format-function 'writer-mode--num-format))
@@ -1147,10 +1552,10 @@ etc."
 ;; Fringe shit
 ;;
 
-#+end_src
+  #+end_src
 
-** Trying to make olivetti-mode better, and failing
-#+begin_src emacs-lisp :tangle no
+*** Trying to make olivetti-mode better, and failing
+ #+begin_src emacs-lisp :tangle no
 (setq solaire-mode-remap-fringe nil)
 ;(set-face-background 'solaire-fringe-face (face-background 'solaire-hl-line-face))
 
@@ -1182,10 +1587,11 @@ etc."
 ;(setq solaire-mode-remap-fringe nil)
 
 
-#+end_src
+ #+end_src
 
 ** Org-latex export
 
+Why does it not simply do what I intend?
 #+begin_src emacs-lisp :tangle yes
                 ;;;;;;;;
 ;;
@@ -1193,7 +1599,7 @@ etc."
 ;;
 ;;;;;;;;
 
-(after! 'ox-latex
+(after! org
    (add-to-list 'org-latex-classes
                 '("tufte"
                   "\\documentclass{tufte-book}"
@@ -1211,19 +1617,60 @@ etc."
                   ("\\subsection{%s}" . "\\subsection*{%s}")
                   ("\\subsubsection{%s}" . "\\subsubsection*{%s}"))
                 )
-        (setq org-latex-text-markup-alist '((bold . "\\textbf{%s}")
-                                            (code . protectedtexttt)
-                                       (italic . "\\emph{%s}")
-					 (strike-through . "\\sout{%s}")
-					 (underline . "\\uline{%s}")
-					 (verbatim . "{\\color{red}%s}")))
-        (add-to-list 'org-latex-default-packages-alist '("" "xcolor" nil) '("" "braket" nil)))
+    (setq org-latex-text-markup-alist '((bold . "\\textbf{%s}")
+                                        (code . protectedtexttt)
+                                        (italic . "\\emph{%s}")
+                                        (strike-through . "\\sout{%s}")
+                                        (underline . "\\uline{%s}")
+                                        (verbatim . "{\\color{red}%s}")))
+(setq org-latex-default-packages-alist
+      '(
+ ;("AUTO" "inputenc" t
+ ; ("pdflatex"))
+ ;("T1" "fontenc" t
+ ; ("pdflatex"))
+ ("utf8" "inputenc" nil)
+ ("" "graphicx" t)
+ ("" "grffile" t)
+ ("" "longtable" nil)
+ ("" "wrapfig" nil)
+ ("" "rotating" nil)
+ ("normalem" "ulem" t)
+ ("" "amsmath" t)
+ ("" "textcomp" t)
+ ("" "amssymb" t)
+ ("" "capt-of" nil)
+ ("style=apa, backend=biber" "biblatex" nil)
+ ("" "braket" nil)
+ ("" "xcolor" nil)
+ ("" "hyperref" nil))
+)
+(setq  org-latex-pdf-process
+       '("latexmk -shell-escape -bibtex -pdf %f -f")
+       org-latex-compiler "xelatex"
+       org-latex-bib-compiler "biber")
+    )
+    ;(add-to-list 'org-latex-default-packages-alist
+    ;             '("" "xcolor" nil))
+    ;(add-to-list 'org-latex-default-packages-alist
+    ;             '("" "braket" nil))
+    ;(add-to-list 'org-latex-default-packages-alist '("style=apa, backend=biber" "biblatex" nil)))
+    ;(setq org-format-latex-header (concat org-format-latex-header "\n\\")))
 
 
 #+end_src
 
-* Some other things, such as vterm
 
+
+* Some other things, such as vterm
+** Mail
+
+#+begin_src emacs-lisp :tangle no
+(require 'nano-mu4e)
+(require 'nano-agenda)
+#+end_src
+
+Misc
 #+begin_src elisp :tangle yes
         ;;;;;;;;;;;;;
 ;;;
@@ -1235,7 +1682,11 @@ etc."
 
 (setq evil-escape-key-sequence "qd")
 
-(add-hook! 'fundamental-mode-hook (solaire-mode -1))
+#+end_src
+
+I would like to use tree-sitter instead of font-lock, but it does not really work well with .tsx and org-mode, so for now it will remain here.
+#+begin_src emacs-lisp :tangle yes
+
 ;(use-package! tree-sitter
 ;  :config
 ;  (require 'tree-sitter-langs)
@@ -1248,13 +1699,23 @@ etc."
 ;  :after tree-sitter
 ;  :config
 ; (tree-sitter-require 'tsx)
-;  (add-to-list 'tree-sitter-major-mode-language-alist '(typescript-tsx-mode . tsx)))
+;(add-to-list 'tree-sitter-major-mode-language-alist '(typescript-tsx-mode . tsx)))
+#+end_src
+
+Colors in the info box, jeej.
+#+begin_src emacs-lisp :tangle yes
+(use-package! info-colors
+  :commands (info-colors-fontify-node))
+
+(add-hook 'Info-selection-hook 'info-colors-fontify-node)
 
 #+end_src
 
 * Keyboard shortcuts
 
 ** Great keybindings by moi
+
+I just map everything to SPC-r because doom is not using it and r stands for roam.
 #+begin_src elisp :tangle yes
 (map! :leader
       (:prefix ("r" . "roam")
@@ -1269,10 +1730,11 @@ etc."
        :desc "tag (roam)"           "t"   #'org-roam-tag-add
        :desc "tag (org)"            "T"   #'org-set-tags-command
        :desc "pomodoro"             "p"   #'org-pomodoro
-       :desc "change nano-theme"    "n"   #'nano-change-theme
+       :desc "change nano-theme"    "n"   #'nano-toggle-theme
        :desc "rebuid db"            "d"   #'org-roam-db-build-cache
        :desc "cite"                 "c"   #'helm-bibtex
-       :desc "writing-mode"         "w"   #'thomas/writing-mode
+       :desc "thesaurus this word"  "w"  #'powerthesaurus-lookup-word-at-point
+       :desc "thesaurus lookup word" "W"   #'powerthesaurus-lookup-word
        :desc "outline"              "o"   #'org-ol-tree
        (:prefix ("m" . "transclusion")
                 :desc "make link"            "m"   #'org-transclusion-make-from-link
@@ -1335,3 +1797,43 @@ This does not apply them to org-mode, which uses evil-org.el, but those are easi
     "go"        'org-forward-element)
   )
           #+end_src
+
+* To configure
+
+** Some packages to check out
+
+   Binder
+   Org-marginalia
+   ...
+
+** Tweaks I want to make
+   Make olivetti mode margins  scale with the text size better
+
+   Smaller headings, they are a bit ridiculous.
+   Zoom in a bit by default.
+
+** TODO Set org env based on title
+
+   I want some way to have emacs recognize settings based on either the title of the org file or its tags. The way I set things up is not conducive for every situation.
+*** GTD
+
+    Not sure yet.
+*** Config
+
+    Colorful theme so you can see the parentheses well.
+    No flyspell etc.
+
+*** Notes
+
+    Less extreme distraction freeness, possibility to open multiple notes
+    Sans serif
+    Nroam/org-roam-buffer
+    Little EAF window with the map
+    Treemacs?
+
+*** Writing
+
+    Distraction free layout with olivetti
+    Org num
+    Marginalia
+    Serif

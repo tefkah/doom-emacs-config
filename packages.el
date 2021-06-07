@@ -77,18 +77,24 @@
 (package! org-transclusion :recipe (:local-repo "~/Projects/org-transclusion"
                                     ;:build (:not compile)
                                     ))
+(package! org-marginalia :recipe (:host github :repo "nobiot/org-marginalia"))
+
 (package! nroam)
 (package! org-fragtog)
+(package! org-appear :recipe (:host github :repo "awth13/org-appear"))
 (package! org-noter-pdftools)
 (package! org-pdftools)
 (package! company-org-roam)
-(package! org-notifications)
-(package! olivetti)
-;(package! olivetti :recipe (:local-repo "~/Projects/emacs/olivetti"))
+;(package! olivetti)
+(package! olivetti :recipe (:local-repo "~/Projects/emacs/olivetti"))
+(package! binder)
+
 (package! focus)
 (package! wc-goal-mode)
 (package! centered-window)
 (package! mixed-pitch)
+
+(package! powerthesaurus)
 
 (package! tree-sitter)
 (package! tree-sitter-langs)
@@ -103,5 +109,33 @@
   :recipe (:host github :repo "tecosaur/engrave-faces"))
 (package! mlscroll)
 
-
 (package! doom-modeline :recipe (:local-repo "~/Projects/emacs/doom-modeline"))
+
+
+(package! erefactor)
+
+(package! svg-tag-mode :recipe (:host github :repo "rougier/svg-tag-mode"))
+(package! mu4e-dashboard :recipe (:host github :repo "rougier/mu4e-dashboard"))
+(package! mu4e-thread-folding :recipe (:host github :repo "rougier/mu4e-thread-folding"))
+;(package! org-agenda :recipe (:host github :repo "rougier/mu4e-thread-folding"))
+
+(package! dashboard)
+;(package! pulse-cursor :recipe (:host nil :repo  https://gist.github.com/jasonjckn/0e92c55f1ab0be0947bb613a4706bc33 ))
+(package! smooth-scrolling)
+(package! good-scroll)
+(package! scroll-on-jump)
+;(package! yascroll)
+
+;; EAF stuff
+(package! eaf :recipe (:host github
+                            :repo "manateelazycat/emacs-application-framework"
+                            :files ("*.el" "*.py" "core" "app")))
+(package! epc)
+(package! ctable)
+(package! deferred)
+(package! s)
+
+(package! info-colors)
+
+(package! org-notifications)
+(package! org-wild-notifier)
