@@ -78,21 +78,6 @@
   (custom-set-faces! '(mode-line :family "Fira Code"))
   (doom-modeline--set-char-widths doom-modeline-rhs-icons-alist))
 
-(use-package! dashboard
-  :init
-  (dashboard-setup-startup-hook)
-  ;(setq initial-buffer-choice
-  ;      (lambda () (get-buffer "*dashboard*")))
-  :config
-  (setq dashboard-center-content t
-        dashboard-banner-logo-title "Emacs"
-        dashboard-startup-banner 'logo
-        dashboard-set-file-icons t
-        dashboard-set-heading-icons t
-        dashboard-set-init-info t
-        dashboard-week-agenda t
-        ))
-
 (setq blink-cursor-alist '((box . box)))
 (setq blinking-cursor-mode 1)
 
@@ -103,7 +88,11 @@
 
 (use-package! org-appear
   :after org
-  :hook (org-mode . org-appear-mode))
+  :hook (org-mode . org-appear-mode)
+  :config (setq
+           org-appear-autolinks t
+           org-appear-autoentities t
+           org-appear-autosubmarkers t ))
 
 (use-package! org-transclusion
   :after org-roam
@@ -114,7 +103,7 @@
 
 (alert "AAA" :style 'message)
 
-        (defvar +org-roam-open-buffer-on-find-file nil
+(defvar +org-roam-open-buffer-on-find-file nil
   "If non-nil, open the org-roam buffer when opening an org roam file.")
 (use-package! org-roam
   ;;:hook (org-load . org-roam-mode)
@@ -299,7 +288,7 @@
            :unnarrowed t))))
 ;)
 
-   (use-package! org-noter
+(use-package! org-noter
   :after (:any org pdf-view)
   :config
   (setq
@@ -323,7 +312,7 @@
   (with-eval-after-load 'pdf-annot
     (add-hook 'pdf-annot-activate-handler-functions #'org-noter-pdftools-jump-to-note)))
 
-        (use-package! nroam
+(use-package! nroam
   :after org-roam
   :config
   (add-hook 'org-roam-mode-hook  #'nroam-setup-maybe)
@@ -353,7 +342,7 @@
 
 (add-hook! 'org-mode-hook #'org-mode-remove-stars)
 
-  ;; hide title / author ... keywords
+;; hide title / author ... keywords
 
 ;;; Ugly org hooks
 (defun nicer-org ()
@@ -371,17 +360,39 @@
 (add-hook! 'org-mode-hook  #'nicer-org)
 
 (after! org
-  (setq org-startup-with-latex-preview 1
-        org-startup-with-inline-images 1
+  (setq org-startup-with-latex-preview 1 ;always preview latex
+        org-startup-with-inline-images 1 ;always preview images
         ;org-hide-leading-stars 1
-        org-startup-indented nil
+        org-startup-indented nil         ; don't indent
         ;org-superstar-headline-bullets-list`("\u200b")
   ;      org-startup-folded nil
-        ;org-startup-numerated 1
+        ;org-startup-numerated 1         ; does not seem to work
         org-hidden-keywords '(title author date startup roam_tags)
-        org-pretty-entities 1
-        org-num-max-level 3
-        header-line-format nil))
+        org-pretty-entities 1            ; show unicode characters
+        org-num-max-level 3              ; no 1.1.1.2
+        ;header-line-format nil
+        ;; Open indirect buffer in another window rather than this one
+        org-indirect-buffer-display 'other-window
+        ))
+
+(defun +org-tree-to-indirect-buffer-options (option)
+    (let* ((old-value org-indirect-buffer-display))
+          (progn
+            (setq org-indirect-buffer-display option)
+          (org-tree-to-indirect-buffer)
+          (setq org-indirect-buffer-display old-value))))
+
+(defun +org-tree-to-indirect-other-window ()
+  (interactive)
+  (+org-tree-to-indirect-buffer-options 'other-window))
+
+(defun +org-tree-to-indirect-current-window ()
+  (interactive)
+  (+org-tree-to-indirect-buffer-options 'current-window))
+
+(defun +org-tree-to-indirect-dedicated-frame ()
+  (interactive)
+  (+org-tree-to-indirect-buffer-options 'dedicated-frame))
 
 (after! org
 (custom-set-faces!
@@ -412,7 +423,7 @@
           ("~" code)
           ("+" (:strike-through t)))))
 
-        (after! org
+(after! org
 (setq org-ellipsis " ▾ ")
   (appendq! +ligatures-extra-symbols
           `(:checkbox      "☐"
@@ -662,15 +673,180 @@ Imitates the look of wordprocessors a bit."
     (setq header-line-format writing-header--default-format
           mode-line-format writing-modeline--default-format)))
 
+(defcustom double-modeline-margin-inner-height 60
+  "inner"
+  :type 'integer)
+(defcustom double-modeline-margin-outer-height 10
+  "outer"
+  :type 'integer)
+
+(after! org
+        (require 'svg))
+(defun make-svg-rectangle (width height-1 bg-1 height-2 bg-2)
+  (let* ((svg (svg-create width (+ height-1 height-2))))
+    (svg-rectangle svg 0 0 width height-1 :fill-color bg-1)
+    (svg-rectangle svg 0 height-1 width height-2 :fill-color bg-2)
+    svg))
+
+(defun make-svg-rectangles (width height-1 bg-1 &rest other)
+  (let* ((temptt 0)
+         (height-temp height-1)
+         (svg (svg-create width
+                           (+ height-1
+                             (dotimes
+                                (i (/ (length other) 2) temptt)
+                                         (setq temptt
+                                               (+
+                                          (nth (* i 2) other)
+                                          temptt)))))))
+    (svg-rectangle svg 0 0 width height-1 :fill-color bg-1)
+    (when other
+      (dotimes (i (/ (length other) 2))
+    (svg-rectangle svg 0
+                   (if (eq i 0) height-1
+                     (setq-local height-temp
+                                 (+ height-temp
+                                    (nth (* (- i 2) 2) other))))
+                   width
+                   (nth (* i 2) other)
+                   :fill-color (nth (+ (* i 2) 1) other))))
+    svg))
+
+(defun mode-line-compose (height-1 bg-1 height-2 bg-2
+                                   header)
+  (let* ((fringe-width (car (window-fringes nil)))
+         (body-width (window-body-width nil t))
+         (margin-width (* (frame-char-width)
+                        (+ (car (window-margins))
+                          (cdr (window-margins))))))
+    (concat
+  (format-mode-line
+   (propertize " " 'display (svg-image
+    (make-svg-rectangle fringe-width height-1
+      bg-1 height-2 bg-1))))
+  (format-mode-line
+   (propertize " " 'display (svg-image
+                            (if header
+                             (make-svg-rectangle
+                              (+ margin-width body-width)
+                        height-1 bg-1 height-2 bg-2)
+                             (make-svg-rectangle
+                              (+ margin-width body-width)
+                        height-2 bg-2 height-1 bg-1)))))
+  (format-mode-line
+   (propertize " " 'display (svg-image
+    (make-svg-rectangle fringe-width height-1
+      bg-1 height-2 bg-1)))))))
+
+(defvar double-modeline--default-header-format header-line-format
+  "Storage for the default `mode-line-format'.
+So it can be restored when 'writer-header-line-mode' is disabled.")
+
+(defvar double-modeline--default-modeline-format mode-line-format)
+
+(define-minor-mode double-header-line-mode
+  "Adds a bar with the same color as the fringe as the header-line.
+Imitates the look of wordprocessors a bit."
+  :init-value nil
+  :global nil
+  (if double-header-line-mode
+      (progn
+(set-face-attribute 'mode-line nil :box nil)
+(set-face-attribute 'header-line nil :box nil)
+(set-face-attribute 'mode-line-inactive nil :box nil)
+        (setq header-line-format '((:eval (mode-line-compose
+                                   double-modeline-margin-outer-height
+                                   (face-background 'fringe)
+                                   double-modeline-margin-inner-height
+                                   (face-background 'default)
+                                   t
+                                   ))))
+        (setq mode-line-format '((:eval (mode-line-compose
+                                   double-modeline-margin-outer-height
+                                   (face-background 'fringe)
+                                   double-modeline-margin-inner-height
+                                   (face-background 'default)
+                                   nil
+                                   )))))
+    (setq header-line-format 'double-modeline--default-header-format
+          mode-line-format 'double-modeline--default-modeline-format)))
+
+(after! olivetti-mode (setq double-modeline-margin-inner-height  (round (* 0.6 (* (frame-char-width) (car (window-margins)))))))
+
+(defun change-page-break ()
+   (interactive)
+   (font-lock-add-keywords 'org-mode
+    `((,page-delimiter
+       ;; variable with the regexp (usually "^\f" or "^^L")
+        0
+        (prog1 nil
+          ;(compose-region (match-beginning 0) (match-end 0) "")
+          ;(testtest)
+          ;(put-text-property (match-beginning 0) (match-end 0) 'display (make-svg-rectangle (window-body-width nil t) 40 (face-background 'fringe) 30 (face-background 'default)))
+;; don't display ^L
+          (make-line-break (* (frame-char-width) (car (window-margins)))
+                           (face-background 'default) 40 (face-background 'fringe))) t))))
+
+(defun make-line-break (h1 bg1 h2 bg2)
+         (compose-region (match-beginning 0) (match-end 0) "")
+          ;; make an overlay (like in hl-line)
+          (let ((pdl (make-overlay (line-beginning-position)                                   (line-beginning-position 2))))
+            (overlay-put pdl 'put-image t)
+            ;(overlay-put pdl 'after-string
+            ;             (propertize "x"
+            ;                         'display (list (list 'margin 'left-margin)
+            ;                                        (svg-image (make-svg-rectangles (* (frame-char-width) (car (window-margins))) h1 bg1 h2 bg2 h1 bg1 )))))
+            (overlay-put pdl 'before-string
+                         (concat
+                         (propertize "x"
+                                     'display (list (list 'margin 'right-margin)
+                                                    (svg-image (make-svg-rectangles (* (frame-char-width) (car (window-margins))) h1 bg1 h2 bg2 h1 bg1))))
+                         (propertize "x"
+                                     'display (list (list 'margin 'left-margin)
+                                                    (svg-image (make-svg-rectangles (* (frame-char-width) (car (window-margins))) h1 bg1 h2 bg2 h1 bg1 ))))))
+            (overlay-put pdl 'map image-map)
+            (overlay-put pdl  'display (svg-image (make-svg-rectangles (- (window-body-width nil t) 0 ) h1 bg1 h2 bg2 h1 bg1)))
+            (overlay-put pdl 'modification-hooks
+                         ;; these arguments are received from modification-hooks
+                         '((lambda (overlay after-p begin end &optional length)
+                             (delete-overlay overlay))))
+               (overlay-put pdl 'insert-in-front-hooks                         '((lambda (overlay after-p begin end &optional length)
+                            (delete-overlay overlay))))))
+
+(after! org (change-page-break))
+
 (use-package! olivetti
-  :after org-roam
-  :hook (olivetti-mode . writing-header-line-mode)
+  :after org
+  ;:hook (olivetti-mode . double-header-line-mode)
   :config
     (setq olivetti-min-body-width 50
           olivetti-body-width 80
           olivetti-style t ; fantastic new layout
           olivetti-margin-width 12)
-    (add-hook! 'olivetti-mode-hook (window-divider-mode -1)))
+    (add-hook! 'olivetti-mode-hook (window-divider-mode -1))
+    (add-hook! 'olivetti-mode-hook (set-face-attribute 'window-divider nil :foreground (face-background 'fringe) :background (face-background 'fringe)))
+    (add-hook! 'olivetti-mode-hook (set-face-attribute 'vertical-border nil :foreground (face-background 'fringe) :background (face-background 'fringe)))
+    )
+
+(require 'org-inlinetask)
+
+;(use-package! org-sidebar
+;  :after org
+;  :config
+  ;(setq org-sidebar-default-fns '(org-sidebar--todo-items))
+  ;(add-hook! 'org-sidebar-window-after-display-hook (solaire-mode 1))
+;   )
+
+(after! org
+  (remove-hook 'org-agenda-finalize-hook '+org-exclude-agenda-buffers-from-workspace-h)
+  (remove-hook 'org-agenda-finalize-hook
+               '+org-defer-mode-in-agenda-buffers-h))
+
+(defun thomas/org-get-overview ()
+  "Open outline and sidebar."
+  (progn
+    (org-ol-tree)
+    (org-sidebar)))
 
 (use-package! focus
   :after org-roam
@@ -721,7 +897,7 @@ Imitates the look of wordprocessors a bit."
         (display-line-numbers-mode -1))
     (display-line-numbers-mode 1)))
 
-                ;;;;;;;;
+;;;;;;;;
 ;;
 ;; org-latex-export
 ;;
@@ -817,7 +993,11 @@ Imitates the look of wordprocessors a bit."
       "o" #'evil-window-right
       "O" #'+evil/window-move-right)
 
-(after! evil-org
+(add-hook! 'org-mode-hook #'set-evil-keybindings)
+
+(defun set-evil-keybindings ()
+  (progn
+  (iscroll-mode 1)
   (setq evil-org-movement-bindings
         '((up . "e")
           (down . "n")
@@ -830,8 +1010,41 @@ Imitates the look of wordprocessors a bit."
     "gy"        'org-backward-element
     "gn"        'org-down-element
     "ge"        'org-up-element
-    "go"        'org-forward-element)
+    "go"        'org-forward-element
+;    "n"         'evil-next-visual-line
+;    "e"         'evil-previous-visual-line
+    "n"         'iscroll-forward-line
+    "e"         'iscroll-previous-line
+    "N"         'evil-next-line
+    "E"         'evil-previous-line
+    (kbd "C-n") 'follow-scroll-up
+    (kbd "C-e") 'follow-scroll-down
+    "zn"        '+org-tree-to-indirect-other-window
+    "zs"        '+org-tree-to-indirect-current-window
+    "zv"        '+org-tree-to-indirect-other-frame
   )
+  (when (eq iscroll-mode t)
+      (evil-define-key 'normal evil-org-mode-map
+        "n" 'iscroll-forward-line
+        "e" 'iscroll-previous-line))))
+
+(defun margin-width-pixel (&optional right)
+  "Return the width of the left or optionally right margin in pixels."
+  (if (window-margins)
+     (if right
+           (* (frame-char-width) (cdr (window-margins))) ;;right margin
+          (* (frame-char-width) (car (window-margins)))
+          0)))
+
+(defun org-latex-refresh ()
+  (interactive)
+  (progn
+  (org-clear-latex-preview)
+  (org--latex-preview-region (buffer-end -1) (buffer-end 1))))
+
+(defun org-latex-clear-preview ()
+  (interactive)
+  (org-clear-latex-preview))
 
 (after! doom-modeline
   (setq doom-modeline-enable-word-count t
@@ -847,7 +1060,7 @@ Imitates the look of wordprocessors a bit."
                       :foreground (face-foreground 'mode-line))
   ))
 
-        ;;;;;;;;;;;;;
+;;;;;;;;;;;;;
 ;;;
 ;;; Other
 ;;;

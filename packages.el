@@ -84,7 +84,6 @@
 (package! org-appear :recipe (:host github :repo "awth13/org-appear"))
 (package! org-noter-pdftools)
 (package! org-pdftools)
-(package! company-org-roam)
 ;(package! olivetti)
 (package! olivetti :recipe (:local-repo "~/Projects/emacs/olivetti"))
 (package! binder)
@@ -93,7 +92,7 @@
 (package! wc-goal-mode)
 (package! centered-window)
 (package! mixed-pitch)
-
+(package! wwg :recipe (:host github :repo "ag91/writer-word-goals"))
 (package! powerthesaurus)
 
 (package! tree-sitter)
@@ -104,6 +103,7 @@
            :host github
            :repo "Townk/org-ol-tree"
            ))
+(package! org-sidebar)
 
 (package! engrave-faces
   :recipe (:host github :repo "tecosaur/engrave-faces"))
@@ -124,6 +124,7 @@
 (package! smooth-scrolling)
 (package! good-scroll)
 (package! scroll-on-jump)
+(package! iscroll :recipe (:host github :repo "casouri/iscroll"))
 ;(package! yascroll)
 
 ;; EAF stuff
@@ -139,3 +140,13 @@
 
 (package! org-notifications)
 (package! org-wild-notifier)
+
+;(package! avy)
+(package! visual-regexp)
+(package! visual-regexp-steroids)
+
+(package! font-lock-studio)
+(package! face-explorer)
+
+(package! suggest)
+(package! unpackaged :recipe (:host github :repo "alphapapa/unpackaged.el"))

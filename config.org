@@ -323,7 +323,7 @@ Trying to make my own thing work
 
 ** Startup
 
-   #+begin_src emacs-lisp :tangle yes
+   #+begin_src emacs-lisp :tangle no
 (use-package! dashboard
   :init
   (dashboard-setup-startup-hook)
@@ -565,7 +565,12 @@ Org-fragtog for everything else.
 #+begin_src emacs-lisp :tangle yes
 (use-package! org-appear
   :after org
-  :hook (org-mode . org-appear-mode))
+  :hook (org-mode . org-appear-mode)
+  :config (setq
+           org-appear-autolinks t
+           org-appear-autoentities t
+           org-appear-autosubmarkers t ))
+
 
 #+end_src
 
@@ -909,25 +914,51 @@ No but when I'm writing I don't want org's usual indentation and stars and all t
 
 #+end_src
 
-*** Here I put everything I don't know where to put
+*** Org variables
 
 #+begin_src emacs-lisp :tangle yes
 
 
 (after! org
-  (setq org-startup-with-latex-preview 1
-        org-startup-with-inline-images 1
+  (setq org-startup-with-latex-preview 1 ;always preview latex
+        org-startup-with-inline-images 1 ;always preview images
         ;org-hide-leading-stars 1
-        org-startup-indented nil
+        org-startup-indented nil         ; don't indent
         ;org-superstar-headline-bullets-list`("\u200b")
   ;      org-startup-folded nil
-        ;org-startup-numerated 1
+        ;org-startup-numerated 1         ; does not seem to work
         org-hidden-keywords '(title author date startup roam_tags)
-        org-pretty-entities 1
-        org-num-max-level 3
-        header-line-format nil))
+        org-pretty-entities 1            ; show unicode characters
+        org-num-max-level 3              ; no 1.1.1.2
+        ;header-line-format nil
+        ;; Open indirect buffer in another window rather than this one
+        org-indirect-buffer-display 'other-window
+        ))
 
 
+#+end_src
+
+**** Better indirect buffers
+Sometimes I want to move a tree to an indirect buffer, but sometimes I want to put it in another window, sometimes the same one, and sometimes to another frame. By default there are no functions for this but are controlled by ~org-indirect-buffer-display~. This is a hacky way of achieving this
+#+begin_src emacs-lisp :tangle yes
+(defun +org-tree-to-indirect-buffer-options (option)
+    (let* ((old-value org-indirect-buffer-display))
+          (progn
+            (setq org-indirect-buffer-display option)
+          (org-tree-to-indirect-buffer)
+          (setq org-indirect-buffer-display old-value))))
+
+(defun +org-tree-to-indirect-other-window ()
+  (interactive)
+  (+org-tree-to-indirect-buffer-options 'other-window))
+
+(defun +org-tree-to-indirect-current-window ()
+  (interactive)
+  (+org-tree-to-indirect-buffer-options 'current-window))
+
+(defun +org-tree-to-indirect-dedicated-frame ()
+  (interactive)
+  (+org-tree-to-indirect-buffer-options 'dedicated-frame))
 #+end_src
 *** Custom faces
 
@@ -1267,20 +1298,481 @@ Imitates the look of wordprocessors a bit."
           mode-line-format writing-modeline--default-format)))
 #+end_src
 
+**** Experiment with Rougier's double modeline
+
+#+begin_src emacs-lisp :tangle no
+;; -------------------------------------------------------------------
+;; A proof of concept for a multi header or mode line
+;;
+;; Multi line header or mode line is made possible by generating an
+;; SVG image made of two small lines of text. It is certainly memory
+;; hungry but it seems to be fast enough to display line/column while
+;; typing text. It can probably be extended in a number of ways.
+;;
+;; Feel free to modify it for your own needs.
+;; -------------------------------------------------------------------
+(require 'svg)
+
+(defun tag (line-1 font-size-1 font-family-1 foreground-1
+            line-2 font-size-2 font-family-2 foreground-2
+            left)
+  (let* ((font-size-1   (or font-size-1 14))
+         (char-width-1  (* font-size-1 0.6))
+         (char-height-1 (+ font-size-1 0.0))
+         (width-1       (* char-width-1 20))
+         (height-1      (+ (* char-height-1 2) 1))
+
+         (font-size-2   (or font-size-2 14))
+         (char-width-2  (* font-size-2 0.6))
+         (char-height-2 (+ font-size-2 0.0))
+         (width-2       (* char-width-2 20))
+         (height-2      (+ (* char-height-2 2) 1))
+
+         (width         (max width-1 width-2))
+         (height        (max height-1 height-2))
+
+         (x1 (if left 0 (- width (* char-width-1 (+ (length line-1) .0)))))
+         (x2 (if left 0 (- width (* char-width-2 (+ (length line-2) .0)))))
+         (y1 char-height-1)
+         (y2 (+ (* char-height-2 2) 1))
+         (svg (svg-create width height)))
+    (svg-text svg line-1
+              :font-family font-family-1
+              :font-size font-size-1 :fill foreground-1
+              :x x1 :y y1)
+
+    (svg-text svg line-2
+              :font-family font-family-2
+              :font-size font-size-2 :fill foreground-2
+              :x x2 :y y2)
+    svg))
+
+(define-key mode-line-major-mode-keymap [header-line]
+  (lookup-key mode-line-major-mode-keymap [mode-line]))
+
+(defun mode-line-render (left right)
+  (let* ((available-width (- (window-width) (length left))))
+    (format (format "%%s %%%ds" available-width) left right)))
+
+(setq header-line-format
+     '((:eval
+       (mode-line-render
+        (format-mode-line
+          (propertize (make-string 20 ?\ )
+                      'display (svg-image
+                        (tag (format-mode-line "%m") 12 "Roboto Mono Light" "#00008b"
+                             (format-mode-line "%b") 14 "Roboto Mono"       "black"
+                             t) :ascent 100)))
+        (format-mode-line
+          (propertize (make-string 18 ?\ )
+                      'display (svg-image
+                        (tag (format-mode-line "GNU Emacs 26.3  ") 12 "Roboto Mono Light" "#00008b"
+                             (format-mode-line "%4l:%2c") 12 "Roboto Mono Light" "#999999"
+                             nil) :ascent 100)))))))
+#+end_src
+
+
+**** My much better version
+#+begin_src emacs-lisp :tangle yes
+(defcustom double-modeline-margin-inner-height 60
+  "inner"
+  :type 'integer)
+(defcustom double-modeline-margin-outer-height 10
+  "outer"
+  :type 'integer)
+#+end_src
+#+begin_src emacs-lisp :tangle yes
+(after! org
+        (require 'svg))
+(defun make-svg-rectangle (width height-1 bg-1 height-2 bg-2)
+  (let* ((svg (svg-create width (+ height-1 height-2))))
+    (svg-rectangle svg 0 0 width height-1 :fill-color bg-1)
+    (svg-rectangle svg 0 height-1 width height-2 :fill-color bg-2)
+    svg))
+
+(defun make-svg-rectangles (width height-1 bg-1 &rest other)
+  (let* ((temptt 0)
+         (height-temp height-1)
+         (svg (svg-create width
+                           (+ height-1
+                             (dotimes
+                                (i (/ (length other) 2) temptt)
+                                         (setq temptt
+                                               (+
+                                          (nth (* i 2) other)
+                                          temptt)))))))
+    (svg-rectangle svg 0 0 width height-1 :fill-color bg-1)
+    (when other
+      (dotimes (i (/ (length other) 2))
+    (svg-rectangle svg 0
+                   (if (eq i 0) height-1
+                     (setq-local height-temp
+                                 (+ height-temp
+                                    (nth (* (- i 2) 2) other))))
+                   width
+                   (nth (* i 2) other)
+                   :fill-color (nth (+ (* i 2) 1) other))))
+    svg))
+
+(defun mode-line-compose (height-1 bg-1 height-2 bg-2
+                                   header)
+  (let* ((fringe-width (car (window-fringes nil)))
+         (body-width (window-body-width nil t))
+         (margin-width (* (frame-char-width)
+                        (+ (car (window-margins))
+                          (cdr (window-margins))))))
+    (concat
+  (format-mode-line
+   (propertize " " 'display (svg-image
+    (make-svg-rectangle fringe-width height-1
+      bg-1 height-2 bg-1))))
+  (format-mode-line
+   (propertize " " 'display (svg-image
+                            (if header
+                             (make-svg-rectangle
+                              (+ margin-width body-width)
+                        height-1 bg-1 height-2 bg-2)
+                             (make-svg-rectangle
+                              (+ margin-width body-width)
+                        height-2 bg-2 height-1 bg-1)))))
+  (format-mode-line
+   (propertize " " 'display (svg-image
+    (make-svg-rectangle fringe-width height-1
+      bg-1 height-2 bg-1)))))))
+
+(defvar double-modeline--default-header-format header-line-format
+  "Storage for the default `mode-line-format'.
+So it can be restored when 'writer-header-line-mode' is disabled.")
+
+(defvar double-modeline--default-modeline-format mode-line-format)
+
+(define-minor-mode double-header-line-mode
+  "Adds a bar with the same color as the fringe as the header-line.
+Imitates the look of wordprocessors a bit."
+  :init-value nil
+  :global nil
+  (if double-header-line-mode
+      (progn
+(set-face-attribute 'mode-line nil :box nil)
+(set-face-attribute 'header-line nil :box nil)
+(set-face-attribute 'mode-line-inactive nil :box nil)
+        (setq header-line-format '((:eval (mode-line-compose
+                                   double-modeline-margin-outer-height
+                                   (face-background 'fringe)
+                                   double-modeline-margin-inner-height
+                                   (face-background 'default)
+                                   t
+                                   ))))
+        (setq mode-line-format '((:eval (mode-line-compose
+                                   double-modeline-margin-outer-height
+                                   (face-background 'fringe)
+                                   double-modeline-margin-inner-height
+                                   (face-background 'default)
+                                   nil
+                                   )))))
+    (setq header-line-format 'double-modeline--default-header-format
+          mode-line-format 'double-modeline--default-modeline-format)))
+
+(after! olivetti-mode (setq double-modeline-margin-inner-height  (round (* 0.6 (* (frame-char-width) (car (window-margins)))))))
+#+end_src
+*** new pages break
+#+begin_src emacs-lisp :tangle no
+
+ (defun change-page-break ()
+   (interactive)
+   (font-lock-add-keywords 'org-mode
+    `((,page-delimiter
+       ;; variable with the regexp (usually "^\f" or "^^L")
+        0
+        (prog1 nil
+          ;(compose-region (match-beginning 0) (match-end 0) "")
+          ;(testtest)
+   (put-text-property (match-beginning 0) (match-end 0)
+               'display (svg-image (make-svg-rectangles
+                                    ;; just to be sure
+                                    (* 3 (window-body-width nil t))
+                                    30 "red" 40 "yellow" 30 "red"))
+          ;(put-text-property (match-beginning 0) (match-end 0) 'display (make-svg-rectangle (window-body-width nil t) 40 (face-background 'fringe) 30 (face-background 'default)))
+          )) t))))
+#+end_src
+
+#+begin_src emacs-lisp :tangle yes
+
+ (defun change-page-break ()
+   (interactive)
+   (font-lock-add-keywords 'org-mode
+    `((,page-delimiter
+       ;; variable with the regexp (usually "^\f" or "^^L")
+        0
+        (prog1 nil
+          ;(compose-region (match-beginning 0) (match-end 0) "")
+          ;(testtest)
+          ;(put-text-property (match-beginning 0) (match-end 0) 'display (make-svg-rectangle (window-body-width nil t) 40 (face-background 'fringe) 30 (face-background 'default)))
+;; don't display ^L
+          (make-line-break (* (frame-char-width) (car (window-margins)))
+                           (face-background 'default) 40 (face-background 'fringe))) t))))
+
+(defun make-line-break (h1 bg1 h2 bg2)
+         (compose-region (match-beginning 0) (match-end 0) "")
+          ;; make an overlay (like in hl-line)
+          (let ((pdl (make-overlay (line-beginning-position)                                   (line-beginning-position 2))))
+            (overlay-put pdl 'put-image t)
+            ;(overlay-put pdl 'after-string
+            ;             (propertize "x"
+            ;                         'display (list (list 'margin 'left-margin)
+            ;                                        (svg-image (make-svg-rectangles (* (frame-char-width) (car (window-margins))) h1 bg1 h2 bg2 h1 bg1 )))))
+            (overlay-put pdl 'before-string
+                         (concat
+                         (propertize "x"
+                                     'display (list (list 'margin 'right-margin)
+                                                    (svg-image (make-svg-rectangles (* (frame-char-width) (car (window-margins))) h1 bg1 h2 bg2 h1 bg1))))
+                         (propertize "x"
+                                     'display (list (list 'margin 'left-margin)
+                                                    (svg-image (make-svg-rectangles (* (frame-char-width) (car (window-margins))) h1 bg1 h2 bg2 h1 bg1 ))))))
+            (overlay-put pdl 'map image-map)
+            (overlay-put pdl  'display (svg-image (make-svg-rectangles (- (window-body-width nil t) 0 ) h1 bg1 h2 bg2 h1 bg1)))
+            (overlay-put pdl 'modification-hooks
+                         ;; these arguments are received from modification-hooks
+                         '((lambda (overlay after-p begin end &optional length)
+                             (delete-overlay overlay))))
+               (overlay-put pdl 'insert-in-front-hooks                         '((lambda (overlay after-p begin end &optional length)
+                            (delete-overlay overlay))))))
+
+
+#+end_src
+This should go somewhere else
+#+begin_src emacs-lisp :tangle yes
+(after! org (change-page-break))
+#+end_src
+#+begin_src emacs-lisp :tangle no
+(defun testtest ()
+  (interactive)
+  (aayyy 30 (face-background 'default) 40 (face-background 'fringe)))
+
+(defun aayyy (h1 bg1 h2 bg2)
+  (progn
+   ;(concat
+   ;(propertize " "
+   ;'display '((margin left-margin) "a"))
+   ;(propertize " "
+    ;           'display '((margin right-margin) "b"))
+   (insert-image (svg-image (make-svg-rectangles (* (frame-char-width) (car (window-margins))) h1 bg1 h2 bg2 h1 bg1)) nil 'left-margin)
+   (insert-image (svg-image (make-svg-rectangles (* (frame-char-width) (cdr (window-margins))) h1 bg1 h2 bg2 h1 bg1)) nil 'right-margin)
+   (insert (propertize " "
+               'display (svg-image (make-svg-rectangles (window-body-width nil t) h1 bg1 h2 bg2 h1 bg1))))
+        ))
+#+end_src
+
+**** Pseudocode to get what i want
+
+This basically sets up the structure for how I want the minor-mode to work. It's not very complicated and there are probably a lot of edge cases, but its rather close to what I want ti
+
+#+begin_src emacs-lisp :tangle no
+(defun change-lines-hook ()
+  (unless (check-if-we-need-to-change-anything)
+  (disable-all-my-overlays)
+  (put-overlays)))
+
+;;either
+(add-hook! 'after-save-hook 'change-lines-hook)
+
+;;or, much too expensive probably.
+(add-hook! 'after-change-functions 'change-lines-hook)
+;mwah maybe okay, org-num-verify also does this and it's somewhat complicated. Really depends on how hard it is to change things.
+
+(defun check-if-no-annoying-env ()
+;; some regex which determines where we are in basically anything that's not a paragraph, such as a heading, a latex environment, a link , a table, or a src block
+;; There's probably a function that already does this
+;; This is not super important for environtments since the overlay won't be part of the text, but it do be kind of annoying
+;(org-at-table-p)
+;(org-at-property-p)
+;(org-at-property-drawer-p)
+;(org-at-property-block-p)
+;(org-at-block-p)
+;(org-at-heading-p)
+;(org-at-heading-or-item-p)
+;(org-at-planning-p)
+
+        ;check whether we are in a paragraph and not a latex section
+(and (eq (car  (org--paragraph-at-point) 'headline))
+    (not (latex))))
+
+(define-minor-mode auto-page-break-overlay-mode nil
+  "Adds out page breaks, neat."
+  :global nil
+  :group wysiwyg
+  (if auto-page-break-overlay-mode
+      (setq some-defaults-i-need-to-rememeber)
+      (progn
+        (run-once)
+        (add-hooks)
+        ;change-lines
+        )
+      (progn    ;else
+        (remove-my-overlays)
+        (remove-hooks)
+        ;change-lines
+        (setq-default some-defaults-i-need-to-remember)
+        ))
+        )
+
+
+
+#+end_src
+
+Big problem with visual line approach is that you cannot scale past a certain point, only until the margins run out, when it suddenly scaling becomes bigger font size.
+I need to make this work with olivetti mode better, or if necessary implement it myself. Don't really want to do that though, would rather rely on olivetti mode.
+ #+begin_src emacs-lisp :tangle no
+;; custom pagebreakinterval
+(defcustom pagebreakinterval 40)
+
+;; getting visual line number pos
+(defun get-visual-line-number-pos (number)
+  ...
+        )
+;; putting the overlay there
+(defun put-overlays ()
+(dotimes (i (/ (count-screen-lines) pagebreakinterval))
+  (make-overlay (visual-line-number (* pagebreakinterval i)) ;start
+                (same)                                       ;end
+                'display (svg-image (rectangle))             ;
+                )))
+
+;;
+(defun check-if-we-need-to-change-anything ()
+  "Check if we need to change anything."
+  (dolist (list-of-overlays overlay)
+    (if (eq (position overlay) (* pagebreakinterval i)) t
+      (add-to-list 'overlays-to-change (overlay . new-pos)))))
+
+;; some way of making sure that stays like it should
+ #+end_src
+Another way of keeping track of position would be keeping track of the number of charachters and setting, somewhat intelligently, a "characters of a certain size per page".
+    - Pros
+      + Don't care about changing lines
+      + Finding nth carachter is easier
+    - Cons
+      + Can happen in the middle of a visual line (would be on me to compute that). This makes inserting the page-break even trickier
+      + Possibly more computation heavy, but probably not, the other thing is already very heavy
+
+#+begin_src emacs-lisp :tangle no
+;;similar as above, only the (check-if-we-need-to-change-anything)
+;; and (put-overlays) need to change
+(defcustom number-of-charchters-per-page 2500
+  "Page is like 500 words, word has 5 characters by default, badabing badoom.")
+
+(defun put-overlays-chars ()
+  (dotimes (i (round (/ (char-count) number-of-characters-per-page)))
+    (if (check-if-no-annoying-env)
+        (make-overlay (* number-of-charachters-per-page i)
+                      (same)
+                      'display etc)
+      (progn   ;else
+        (make-overlay (+ (* number-of-charachters-per-page i) (check-closest-distance-to-safety)) ;;maybe do it anyway if it's too far
+                      etc
+                      )
+        )
+)))
+#+end_src
+
+ANSWER: I should use both! Count characters, but also lines: if there are too many lines, pagebreak, if there are too many characters, page break as well! Maybe just use the lines then anyway.
+
+**** Creating some cohesion between margins, line-numbers and font-size
+
+     One of the big problems i need to solve (or opitons i need to provide) is whether zooming=zooming or zooming=scaling, i.e. does it just change the visual appearance of everything or does it increase the font size?
+     I think the best would be if that were two options, and by default it would do it badly like you would expect, and then I provide a new command which keeps everything nice.
+
+     The main problem now is that the margins do not scale at all when zooming. This is probably something mr olivetti can fix, but I should take it into account nonetheless.
+
+**** Remembering pages
+
+    I should just create a list with pages.
+Either with line or character positions. I can update this instead of the page immediately, should save some trouble.
+    #+begin_src emacs-lisp :tangle no
+(setq page-list (0))
+    #+end_src
+
+**** Numbering pages
+
+I would like to not only have pages, but give them a page number, you know, for that extra pizzaz.
+
+The way to do this is probably to
+ a) keep track of page numbers, see above
+ b) give ~make-svg-rectangles~ the possibility of having a page number displayed
+ c) give the big assigning function/minor mode the tools to assign it to it
+#+begin_src emacs-lisp :tangle no
+;; for the svg
+(defun make-svg-rectangles h1 bg1 &opt page &rest other
+       "yayayya"
+       ;;let part
+       ..
+       ...
+       ...
+;; actual svg part
+      (when page
+       (svg-text svg
+                 page ; maybe have options for roman numerals at some point
+                 :font-size 60 ;idk
+                 :x (round (/ (margin-width-pixel) 2))
+                 :y (/ h1 2)
+                 :text-anchor "middle"
+                 :fill-color (foreground-color 'comment)
+                 ))
+
+       )
+#+end_src
+
+
+
 *** Olivetti, my love
 I want thing to be in the middle, and  with olivetti mode the fringes become larger so it looks like a word processor, fantastic!
 
+
+
 #+begin_src emacs-lisp :tangle yes
 (use-package! olivetti
-  :after org-roam
-  :hook (olivetti-mode . writing-header-line-mode)
+  :after org
+  ;:hook (olivetti-mode . double-header-line-mode)
   :config
     (setq olivetti-min-body-width 50
           olivetti-body-width 80
           olivetti-style t ; fantastic new layout
           olivetti-margin-width 12)
-    (add-hook! 'olivetti-mode-hook (window-divider-mode -1)))
+    (add-hook! 'olivetti-mode-hook (window-divider-mode -1))
+    (add-hook! 'olivetti-mode-hook (set-face-attribute 'window-divider nil :foreground (face-background 'fringe) :background (face-background 'fringe)))
+    (add-hook! 'olivetti-mode-hook (set-face-attribute 'vertical-border nil :foreground (face-background 'fringe) :background (face-background 'fringe)))
+    )
 #+end_src
+*** Trying to get overviews
+#+begin_src emacs-lisp :tangle yes
+(require 'org-inlinetask)
+#+end_src
+
+#+begin_src emacs-lisp :tangle yes
+;(use-package! org-sidebar
+;  :after org
+;  :config
+  ;(setq org-sidebar-default-fns '(org-sidebar--todo-items))
+  ;(add-hook! 'org-sidebar-window-after-display-hook (solaire-mode 1))
+;   )
+#+end_src
+*************** TODO tasktask
+*************** END
+
+#+begin_src emacs-lisp :tangle yes
+(after! org
+  (remove-hook 'org-agenda-finalize-hook '+org-exclude-agenda-buffers-from-workspace-h)
+  (remove-hook 'org-agenda-finalize-hook
+               '+org-defer-mode-in-agenda-buffers-h))
+
+(defun thomas/org-get-overview ()
+  "Open outline and sidebar."
+  (progn
+    (org-ol-tree)
+    (org-sidebar)))
+#+end_src
+
+
 *** STAY FOCUSED
  Pretty cool: focus only the paragraph you're looking at. Don't really use it though.
  #+begin_src emacs-lisp :tangle yes
@@ -1781,7 +2273,11 @@ This does not fix the window bindings, so we have to do that manually
 This does not apply them to org-mode, which uses evil-org.el, but those are easily customized
 
 #+begin_src emacs-lisp :tangle yes
-(after! evil-org
+(add-hook! 'org-mode-hook #'set-evil-keybindings)
+
+(defun set-evil-keybindings ()
+  (progn
+  (iscroll-mode 1)
   (setq evil-org-movement-bindings
         '((up . "e")
           (down . "n")
@@ -1794,10 +2290,54 @@ This does not apply them to org-mode, which uses evil-org.el, but those are easi
     "gy"        'org-backward-element
     "gn"        'org-down-element
     "ge"        'org-up-element
-    "go"        'org-forward-element)
+    "go"        'org-forward-element
+;    "n"         'evil-next-visual-line
+;    "e"         'evil-previous-visual-line
+    "n"         'iscroll-forward-line
+    "e"         'iscroll-previous-line
+    "N"         'evil-next-line
+    "E"         'evil-previous-line
+    (kbd "C-n") 'follow-scroll-up
+    (kbd "C-e") 'follow-scroll-down
+    "zn"        '+org-tree-to-indirect-other-window
+    "zs"        '+org-tree-to-indirect-current-window
+    "zv"        '+org-tree-to-indirect-other-frame
   )
+  (when (eq iscroll-mode t)
+      (evil-define-key 'normal evil-org-mode-map
+        "n" 'iscroll-forward-line
+        "e" 'iscroll-previous-line))))
           #+end_src
+#+begin_src emacs-lisp :tangle no
+(add-hook! 'org-mode-hook #'iscroll-mode)
 
+#+end_src
+* Custom functions I keep using
+
+** Get margin width in pixel
+#+begin_src emacs-lisp :tangle yes
+(defun margin-width-pixel (&optional right)
+  "Return the width of the left or optionally right margin in pixels."
+  (if (window-margins)
+     (if right
+           (* (frame-char-width) (cdr (window-margins))) ;;right margin
+          (* (frame-char-width) (car (window-margins)))
+          0)))
+#+end_src
+** Refresh org-latex
+#+begin_src emacs-lisp :tangle yes
+(defun org-latex-refresh ()
+  (interactive)
+  (progn
+  (org-clear-latex-preview)
+  (org--latex-preview-region (buffer-end -1) (buffer-end 1))))
+#+end_src
+
+#+begin_src emacs-lisp :tangle yes
+(defun org-latex-clear-preview ()
+  (interactive)
+  (org-clear-latex-preview))
+#+end_src
 * To configure
 
 ** Some packages to check out

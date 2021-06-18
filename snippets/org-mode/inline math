@@ -2,4 +2,4 @@
 # name: inline math 
 # key: m
 # --
-$$1$$0
+\\($0\\)

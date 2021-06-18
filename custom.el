@@ -4,7 +4,7 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(org-agenda-files
-   '("~/OneDrive/org-roam/20210402123014-the_configuration_space_explanation_chapter.org" "~/OneDrive/org-roam/actionable.org" "~/OneDrive/org-roam/agenda.org" "~/OneDrive/org-roam/incubate.org" "~/OneDrive/org-roam/openquestions.org")))
+   '("~/OneDrive/org-roam/20210528160149-outline_anyons.org" "~/OneDrive/org-roam/20210528160149-outline_anyons.tmp6aVMYQ.org" "~/OneDrive/org-roam/20210402123014-the_configuration_space_explanation_chapter.org" "~/OneDrive/org-roam/actionable.org" "~/OneDrive/org-roam/agenda.org" "~/OneDrive/org-roam/incubate.org" "~/OneDrive/org-roam/openquestions.org")))
  
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
