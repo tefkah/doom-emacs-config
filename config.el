@@ -101,136 +101,22 @@
 (map! :map org-mode-map
 :nie "C-M-SPC" (cmd! (insert "\u200B")))
 
-(alert "AAA" :style 'message)
+(setq org-roam-v2-ack t)
 
-(defvar +org-roam-open-buffer-on-find-file nil
-  "If non-nil, open the org-roam buffer when opening an org roam file.")
 (use-package! org-roam
-  ;;:hook (org-load . org-roam-mode)
-  :hook (org-roam-backlinks-mode . turn-on-visual-line-mode)
-  :commands (org-roam-buffer-toggle-display
-             org-roam-dailies-find-date
-             org-roam-dailies-find-today
-             org-roam-dailies-find-tomorrow
-             org-roam-dailies-find-yesterday)
-  :preface
-  ;; Set this to nil so we can later detect if the user has set custom values
-  ;; for these variables. If not, default values will be set in the :config
-  ;; section.
-  (defvar org-roam-directory nil)
-  (defvar org-roam-db-location nil)
-  :init
-  (map! :after org
-        :map org-mode-map
-        :localleader
-        :prefix ("m" . "org-roam")
-        "b" #'org-roam-switch-to-buffer
-        "f" #'org-roam-find-file
-        "g" #'org-roam-graph
-        "i" #'org-roam-insert
-        "I" #'org-roam-insert-immediate
-        "m" #'org-roam
-        "t" #'org-roam-tag-add
-        "T" #'org-roam-tag-delete
-        (:prefix ("d" . "by date")
-         :desc "Find previous note" "b" #'org-roam-dailies-find-previous-note
-         :desc "Find date"          "d" #'org-roam-dailies-find-date
-         :desc "Find next note"     "f" #'org-roam-dailies-find-next-note
-         :desc "Find tomorrow"      "m" #'org-roam-dailies-find-tomorrow
-         :desc "Capture today"      "n" #'org-roam-dailies-capture-today
-         :desc "Find today"         "t" #'org-roam-dailies-find-today
-         :desc "Capture Date"       "v" #'org-roam-dailies-capture-date
-         :desc "Find yesterday"     "y" #'org-roam-dailies-find-yesterday
-         :desc "Find directory"     "." #'org-roam-dailies-find-directory))
+  :after org
   :config
-  (setq org-roam-directory
-        (file-name-as-directory
-         (file-truename
-          (expand-file-name (or org-roam-directory "roam")
-                            org-directory)))
-        org-roam-db-location (or org-roam-db-location
-                                 (concat doom-etc-dir "org-roam.db"))
-        org-roam-verbose nil   ; https://youtu.be/fn4jIlFwuLU
-        ;; Make org-roam buffer sticky; i.e. don't replace it when opening a
-        ;; file with an *-other-window command.
-        org-roam-buffer-window-parameters '((no-delete-other-windows . t))
-        org-roam-completion-everywhere t
-        org-roam-completion-system
-        (cond ((featurep! :completion helm) 'helm)
-              ((featurep! :completion ivy) 'ivy)
-              ((featurep! :completion ido) 'ido)
-              ('default)))
-
-  ;; Normally, the org-roam buffer doesn't open until you explicitly call
-  ;; `org-roam'. If `+org-roam-open-buffer-on-find-file' is non-nil, the
-  ;; org-roam buffer will be opened for you when you use `org-roam-find-file'
-  ;; (but not `find-file', to limit the scope of this behavior).
-  (add-hook! 'find-file-hook
-    (defun +org-roam-open-buffer-maybe-h ()
-      (and +org-roam-open-buffer-on-find-file
-           (memq 'org-roam-buffer--update-maybe post-command-hook)
-           (not (window-parameter nil 'window-side)) ; don't proc for popups
-           (not (eq 'visible (org-roam-buffer--visibility)))
-           (with-current-buffer (window-buffer)
-             (org-roam-buffer--get-create)))))
-
-  ;; Hide the mode line in the org-roam buffer, since it serves no purpose. This
-  ;; makes it easier to distinguish from other org buffers.
-  (add-hook 'org-roam-buffer-prepare-hook #'hide-mode-line-mode))
-
-(after! org-roam
-    (setq org-roam-capture-templates
-          `(("s" "standard" plain (function org-roam--capture-get-point)
-     "%?"
-     :file-name "%<%Y%m%d%H%M%S>-${slug}"
-     :head "#+title: ${title}\n#+roam_tags: \n\n* ${title}\n\n"
-     :unnarrowed t)
-        ("d" "definition" plain (function org-roam--capture-get-point)
-         "%?"
-         :file-name "${slug}"
-         :head "#+title: ${title}\n#+roam_tags: definition \n\n* ${title}\n\n\n* Examples\n"
-         :unnarrowed t)))
-  )
+  (setq org-roam-v2-ack t)
+  (setq org-roam-mode-sections
+        (list #'org-roam-backlinks-insert-section
+              #'org-roam-reflinks-insert-section
+              #'org-roam-unlinked-references-insert-section))
+  (org-roam-setup))
 
 ;; Since the org module lazy loads org-protocol (waits until an org URL is
 ;; detected), we can safely chain `org-roam-protocol' to it.
 (use-package! org-roam-protocol
   :after org-protocol)
-
-(use-package! org-roam-server
-  :after org-roam
-  :config
-  (setq org-roam-server-host "127.0.0.1"
-        org-roam-server-port 8081
-        org-roam-server-authenticate nil
-        org-roam-server-export-inline-images t
-        org-roam-server-serve-files nil
-        org-roam-server-served-file-extensions '("pdf" "mp4" "ogv")
-        org-roam-server-network-poll t
-        org-roam-server-network-arrows nil
-        org-roam-server-network-label-truncate t
-        org-roam-server-network-label-truncate-length 60
-        org-roam-server-network-label-wrap-length 20
-        org-roam-server-network-vis-options "{\"physics\": {\"stabilization\": {\"iterations\": 100}}}"
-        ;i;"{\"physics\": {\"enabled\": true, \"barnesHut\":{\"gravitationalConstant\" : -6000, \"avoidOverlap\" : 0.5, \"springLength\" : 200}, \"stabilization\": {\"enabled\": true, \"iterations\": 30}},
-        ;;\"edges\": {\"physics\": true, \"hidden\": false, \"smooth\": {\"enabled\": false, \"type\": \"continuous\"}}}"
-        org-roam-server-cite-edge-dashes nil
-        org-roam-server-extra-cite-edge-options (list (cons 'width 3))
-        ))
-
-(defun org-roam-server-open ()
-    "Ensure the server is active, then open the roam graph."
-    (interactive)
-    (smartparens-global-mode -1)
-    (org-roam-server-mode 1)
-    (browse-url-xdg-open (format "http://localhost:%d" org-roam-server-port))
-    (smartparens-global-mode 1))
-
-;; automatically enable server-mode
-(after! org-roam
-  (smartparens-global-mode -1)
-  (org-roam-server-mode)
-  (smartparens-global-mode 1))
 
 (use-package! org-ref
     ;:after org-roam
@@ -438,7 +324,7 @@
             :subtitle      "𝙩"
             :author        "𝘼"
             :date          "𝘿"
-            :property      "☸"
+            :property      ""
             :options       "⌥"
             :startup       "⏻"
             :macro         "𝓜"
@@ -458,14 +344,15 @@
             :results       "🠶"
             :begin_export  "⏩"
             :end_export    "⏪"
-            :properties    "⚙"
+            :properties    ""
             :end           "∎"
             :priority_a   ,(propertize "⚑" 'face 'all-the-icons-red)
             :priority_b   ,(propertize "⬆" 'face 'all-the-icons-orange)
             :priority_c   ,(propertize "■" 'face 'all-the-icons-yellow)
             :priority_d   ,(propertize "⬇" 'face 'all-the-icons-green)
             :priority_e   ,(propertize "❓" 'face 'all-the-icons-blue)
-            :roam_tags ""))
+            :roam_tags nil
+            :filetags nil))
 (set-ligatures! 'org-mode
   :merge t
   :checkbox      "[ ]"
@@ -507,7 +394,8 @@
   :priority_c    "[#C]"
   :priority_d    "[#D]"
   :priority_e    "[#E]"
-  :roam_tags     "#+roam_tags:")
+  :roam_tags     "#+roam_tags:"
+  :filetags      "#+filetags")
 (plist-put +ligatures-extra-symbols :name "⁍")
 )
 
@@ -773,47 +661,7 @@ Imitates the look of wordprocessors a bit."
 
 (after! olivetti-mode (setq double-modeline-margin-inner-height  (round (* 0.6 (* (frame-char-width) (car (window-margins)))))))
 
-(defun change-page-break ()
-   (interactive)
-   (font-lock-add-keywords 'org-mode
-    `((,page-delimiter
-       ;; variable with the regexp (usually "^\f" or "^^L")
-        0
-        (prog1 nil
-          ;(compose-region (match-beginning 0) (match-end 0) "")
-          ;(testtest)
-          ;(put-text-property (match-beginning 0) (match-end 0) 'display (make-svg-rectangle (window-body-width nil t) 40 (face-background 'fringe) 30 (face-background 'default)))
-;; don't display ^L
-          (make-line-break (* (frame-char-width) (car (window-margins)))
-                           (face-background 'default) 40 (face-background 'fringe))) t))))
-
-(defun make-line-break (h1 bg1 h2 bg2)
-         (compose-region (match-beginning 0) (match-end 0) "")
-          ;; make an overlay (like in hl-line)
-          (let ((pdl (make-overlay (line-beginning-position)                                   (line-beginning-position 2))))
-            (overlay-put pdl 'put-image t)
-            ;(overlay-put pdl 'after-string
-            ;             (propertize "x"
-            ;                         'display (list (list 'margin 'left-margin)
-            ;                                        (svg-image (make-svg-rectangles (* (frame-char-width) (car (window-margins))) h1 bg1 h2 bg2 h1 bg1 )))))
-            (overlay-put pdl 'before-string
-                         (concat
-                         (propertize "x"
-                                     'display (list (list 'margin 'right-margin)
-                                                    (svg-image (make-svg-rectangles (* (frame-char-width) (car (window-margins))) h1 bg1 h2 bg2 h1 bg1))))
-                         (propertize "x"
-                                     'display (list (list 'margin 'left-margin)
-                                                    (svg-image (make-svg-rectangles (* (frame-char-width) (car (window-margins))) h1 bg1 h2 bg2 h1 bg1 ))))))
-            (overlay-put pdl 'map image-map)
-            (overlay-put pdl  'display (svg-image (make-svg-rectangles (- (window-body-width nil t) 0 ) h1 bg1 h2 bg2 h1 bg1)))
-            (overlay-put pdl 'modification-hooks
-                         ;; these arguments are received from modification-hooks
-                         '((lambda (overlay after-p begin end &optional length)
-                             (delete-overlay overlay))))
-               (overlay-put pdl 'insert-in-front-hooks                         '((lambda (overlay after-p begin end &optional length)
-                            (delete-overlay overlay))))))
-
-(after! org (change-page-break))
+(use-package! page-break-mode)
 
 (use-package! olivetti
   :after org
@@ -1028,13 +876,16 @@ Imitates the look of wordprocessors a bit."
         "n" 'iscroll-forward-line
         "e" 'iscroll-previous-line))))
 
+(use-package! all-the-icons-ivy-rich
+  :init (all-the-icons-ivy-rich-mode))
+
 (defun margin-width-pixel (&optional right)
   "Return the width of the left or optionally right margin in pixels."
   (if (window-margins)
      (if right
            (* (frame-char-width) (cdr (window-margins))) ;;right margin
-          (* (frame-char-width) (car (window-margins)))
-          0)))
+          (* (frame-char-width) (car (window-margins))))
+          0))
 
 (defun org-latex-refresh ()
   (interactive)
@@ -1072,12 +923,13 @@ Imitates the look of wordprocessors a bit."
 
 (map! :leader
       (:prefix ("r" . "roam")
-       :desc "find file"            "f"   #'org-roam-find-file
+       :desc "find file"            "f"   #'org-roam-node-find
+       :desc "find ref"             "F"   #'org-roam-ref-find
        :desc "highlight"            "r"   #'org-noter-insert-note
        :desc "center scroll"        "s"   #'prot/scroll-center-cursor-mode
        :desc "start taking notes"   "S"   #'org-noter
-       :desc "toggle buffer"        "b"   #'org-roam-buffer-toggle-display
-       :desc "insert note"          "i"   #'org-roam-insert
+       :desc "toggle buffer"        "b"   #'org-roam-buffer-toggle
+       :desc "insert note"          "i"   #'org-roam-node-insert
        :desc "server"               "g"   #'org-roam-server
        :desc "quit notes"           "q"   #'org-noter-kill-session
        :desc "tag (roam)"           "t"   #'org-roam-tag-add

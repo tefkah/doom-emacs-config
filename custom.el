@@ -3,6 +3,8 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(custom-safe-themes
+   '("47db50ff66e35d3a440485357fb6acb767c100e135ccdf459060407f8baea7b2" default))
  '(org-agenda-files
    '("~/OneDrive/org-roam/20210528160149-outline_anyons.org" "~/OneDrive/org-roam/20210528160149-outline_anyons.tmp6aVMYQ.org" "~/OneDrive/org-roam/20210402123014-the_configuration_space_explanation_chapter.org" "~/OneDrive/org-roam/actionable.org" "~/OneDrive/org-roam/agenda.org" "~/OneDrive/org-roam/incubate.org" "~/OneDrive/org-roam/openquestions.org")))
  

@@ -561,7 +561,7 @@ Allows you to jump in and out of latex fragments without using `C-c C-x C-l` all
 
 #+end_src
 
-Org-fragtog for everything else.
+Org-appear for everything else.
 #+begin_src emacs-lisp :tangle yes
 (use-package! org-appear
   :after org
@@ -587,12 +587,26 @@ Having zero-width spaces can be very useful /sometimes/​!
 (map! :map org-mode-map
 :nie "C-M-SPC" (cmd! (insert "\u200B")))
 #+end_src
-#+begin_src emacs-lisp :tangle yes
-(alert "AAA" :style 'message)
-#+end_src
 
 ** Org-roam
+Fantastic package which allows you to backlink etc.
+
+*** v2 baby
 #+begin_src emacs-lisp :tangle yes
+(setq org-roam-v2-ack t)
+
+(use-package! org-roam
+  :after org
+  :config
+  (setq org-roam-v2-ack t)
+  (setq org-roam-mode-sections
+        (list #'org-roam-backlinks-insert-section
+              #'org-roam-reflinks-insert-section
+              #'org-roam-unlinked-references-insert-section))
+  (org-roam-setup))
+ #+end_src
+*** doom emacs config
+     #+begin_src emacs-lisp :tangle no
         (defvar +org-roam-open-buffer-on-find-file nil
   "If non-nil, open the org-roam buffer when opening an org roam file.")
 (use-package! org-roam
@@ -668,11 +682,11 @@ Having zero-width spaces can be very useful /sometimes/​!
   ;; makes it easier to distinguish from other org buffers.
   (add-hook 'org-roam-buffer-prepare-hook #'hide-mode-line-mode))
 
-#+end_src
+  #+end_src
 
 *** Org-roam-capture templates
 
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp :tangle no
 (after! org-roam
     (setq org-roam-capture-templates
           `(("s" "standard" plain (function org-roam--capture-get-point)
@@ -700,7 +714,7 @@ Having zero-width spaces can be very useful /sometimes/​!
 #+end_src
 
 **** Actual server
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp :tangle no
 
 (use-package! org-roam-server
   :after org-roam
@@ -725,7 +739,7 @@ Having zero-width spaces can be very useful /sometimes/​!
 #+end_src
 
 Org-roam server does not really work well with with `smart-parens` for some reason, this fixes that.
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp :tangle no
 (defun org-roam-server-open ()
     "Ensure the server is active, then open the roam graph."
     (interactive)
@@ -1019,7 +1033,7 @@ Ideally I would be able to add my own custom bullshit in here, but I don't know 
             :subtitle      "𝙩"
             :author        "𝘼"
             :date          "𝘿"
-            :property      "☸"
+            :property      ""
             :options       "⌥"
             :startup       "⏻"
             :macro         "𝓜"
@@ -1039,14 +1053,15 @@ Ideally I would be able to add my own custom bullshit in here, but I don't know 
             :results       "🠶"
             :begin_export  "⏩"
             :end_export    "⏪"
-            :properties    "⚙"
+            :properties    ""
             :end           "∎"
             :priority_a   ,(propertize "⚑" 'face 'all-the-icons-red)
             :priority_b   ,(propertize "⬆" 'face 'all-the-icons-orange)
             :priority_c   ,(propertize "■" 'face 'all-the-icons-yellow)
             :priority_d   ,(propertize "⬇" 'face 'all-the-icons-green)
             :priority_e   ,(propertize "❓" 'face 'all-the-icons-blue)
-            :roam_tags ""))
+            :roam_tags nil
+            :filetags nil))
 (set-ligatures! 'org-mode
   :merge t
   :checkbox      "[ ]"
@@ -1088,7 +1103,8 @@ Ideally I would be able to add my own custom bullshit in here, but I don't know 
   :priority_c    "[#C]"
   :priority_d    "[#D]"
   :priority_e    "[#E]"
-  :roam_tags     "#+roam_tags:")
+  :roam_tags     "#+roam_tags:"
+  :filetags      "#+filetags")
 (plist-put +ligatures-extra-symbols :name "⁍")
 )
 
@@ -1475,7 +1491,11 @@ Imitates the look of wordprocessors a bit."
 
 (after! olivetti-mode (setq double-modeline-margin-inner-height  (round (* 0.6 (* (frame-char-width) (car (window-margins)))))))
 #+end_src
-*** new pages break
+*** Page-break-mode
+    #+begin_src emacs-lisp :tangle yes
+(use-package! page-break-mode)
+    #+end_src
+*** KILL obsolete pages break
 #+begin_src emacs-lisp :tangle no
 
  (defun change-page-break ()
@@ -1496,7 +1516,7 @@ Imitates the look of wordprocessors a bit."
           )) t))))
 #+end_src
 
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp :tangle no
 
  (defun change-page-break ()
    (interactive)
@@ -1541,7 +1561,7 @@ Imitates the look of wordprocessors a bit."
 
 #+end_src
 This should go somewhere else
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp :tangle no
 (after! org (change-page-break))
 #+end_src
 #+begin_src emacs-lisp :tangle no
@@ -1723,8 +1743,6 @@ The way to do this is probably to
 #+end_src
 
 
-
-*** Olivetti, my love
 I want thing to be in the middle, and  with olivetti mode the fringes become larger so it looks like a word processor, fantastic!
 
 
@@ -2211,12 +2229,13 @@ I just map everything to SPC-r because doom is not using it and r stands for roa
 #+begin_src elisp :tangle yes
 (map! :leader
       (:prefix ("r" . "roam")
-       :desc "find file"            "f"   #'org-roam-find-file
+       :desc "find file"            "f"   #'org-roam-node-find
+       :desc "find ref"             "F"   #'org-roam-ref-find
        :desc "highlight"            "r"   #'org-noter-insert-note
        :desc "center scroll"        "s"   #'prot/scroll-center-cursor-mode
        :desc "start taking notes"   "S"   #'org-noter
-       :desc "toggle buffer"        "b"   #'org-roam-buffer-toggle-display
-       :desc "insert note"          "i"   #'org-roam-insert
+       :desc "toggle buffer"        "b"   #'org-roam-buffer-toggle
+       :desc "insert note"          "i"   #'org-roam-node-insert
        :desc "server"               "g"   #'org-roam-server
        :desc "quit notes"           "q"   #'org-noter-kill-session
        :desc "tag (roam)"           "t"   #'org-roam-tag-add
@@ -2310,8 +2329,19 @@ This does not apply them to org-mode, which uses evil-org.el, but those are easi
           #+end_src
 #+begin_src emacs-lisp :tangle no
 (add-hook! 'org-mode-hook #'iscroll-mode)
-
 #+end_src
+
+** Ivy
+
+#+begin_src emacs-lisp :tangle yes
+(use-package! all-the-icons-ivy-rich
+  :init (all-the-icons-ivy-rich-mode))
+#+end_src
+** Markdown
+Add .mdx support
+#+begin_src emacs-lisp :tangle yes
+ (add-to-list 'auto-mode-alist '("\\.mdx\\'" . markdown-mode))
+#+end_src`
 * Custom functions I keep using
 
 ** Get margin width in pixel
@@ -2321,8 +2351,8 @@ This does not apply them to org-mode, which uses evil-org.el, but those are easi
   (if (window-margins)
      (if right
            (* (frame-char-width) (cdr (window-margins))) ;;right margin
-          (* (frame-char-width) (car (window-margins)))
-          0)))
+          (* (frame-char-width) (car (window-margins))))
+          0))
 #+end_src
 ** Refresh org-latex
 #+begin_src emacs-lisp :tangle yes
@@ -2377,3 +2407,8 @@ This does not apply them to org-mode, which uses evil-org.el, but those are easi
     Org num
     Marginalia
     Serif
+** PAGES
+
+*** Iscroll
+
+    Works, but "forward-line" is very slow compared to "evil-next-visual-line", should make that compatible with both.

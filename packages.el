@@ -59,11 +59,11 @@
            :repo "chrisbarrett/evil-workman-mode"
            ))
 
-(package! org-roam)
-(package! org-roam-server
-  :recipe (:local-repo "~/Projects/org-roam-server"
-           :files ("*")
-           :build (:not compile)))
+(package! org-roam :recipe (:host github :repo "org-roam/org-roam" ))
+;(package! org-roam-server
+;  :recipe (:local-repo "~/Projects/org-roam-server"
+;           :files ("*")
+;           :build (:not compile)))
 
 (package! ivy-bibtex)
 (package! org-ref)
@@ -105,8 +105,8 @@
            ))
 (package! org-sidebar)
 
-(package! engrave-faces
-  :recipe (:host github :repo "tecosaur/engrave-faces"))
+;(package! engrave-faces
+ ; :recipe (:host github :repo "tecosaur/engrave-faces"))
 (package! mlscroll)
 
 (package! doom-modeline :recipe (:local-repo "~/Projects/emacs/doom-modeline"))
@@ -150,3 +150,9 @@
 
 (package! suggest)
 (package! unpackaged :recipe (:host github :repo "alphapapa/unpackaged.el"))
+
+(package! all-the-icons-ivy-rich)
+
+(package! page-break-mode :recipe (:local-repo "~/Projects/emacs/page-break-mode"))
+
+(package! org-roam-ui :recipe (:local-repo "~/Projects/emacs/OrgRoamForceGraphReact"))
