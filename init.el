@@ -23,7 +23,7 @@
        company           ; the ultimate code completion backend
        ;;helm              ; the *other* search engine for love and life
        ;;ido               ; the other *other* search engine...
-       (ivy +icons +fuzzy +childframe)               ; a search engine for love and life
+       (ivy +icons +fuzzy)               ; a search engine for love and life
 
        :ui
        deft              ; notational velocity for Emacs

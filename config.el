@@ -65,11 +65,25 @@
   (setq mixed-pitch-face 'variable-pitch))
 
 (setq doom-font (font-spec :family "Fira Code" :size 15 :weight 'semi-light)
-       doom-variable-pitch-font (font-spec :family "Noto Serif" :style "Regular" :size 18 :weight 'regular))
+       doom-variable-pitch-font (font-spec :family "Roboto" :style "Regular" :size 18 :weight 'regular))
 
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You an either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
+
+(after! doom-modeline
+  (setq doom-modeline-enable-word-count t
+        doom-modeline-header-line nil
+        ;doom-modeline-hud nil
+        doom-themes-padded-modeline t
+        doom-flatwhite-brighter-modeline nil
+        doom-plain-brighter-modeline nil))
+(add-hook! 'doom-modeline-mode-hook
+           (progn
+  (set-face-attribute 'header-line nil
+                      :background (face-background 'mode-line)
+                      :foreground (face-foreground 'mode-line))
+  ))
 
 (after! doom-modeline
   (doom-modeline-def-modeline 'main
@@ -80,6 +94,62 @@
 
 (setq blink-cursor-alist '((box . box)))
 (setq blinking-cursor-mode 1)
+
+(setq ivy-posframe-width
+  (round (* 0.6 (frame-width))))
+
+;; Please just keep the width fixed
+(defun set-ivy-posframe-width ()
+  (progn
+ (setq ivy-posframe-width (round (* 0.6 (frame-width)))
+        ivy-posframe-parameters
+        `((min-width . 90)
+          (width . ,ivy-posframe-width)
+          (min-height . ,ivy-height)
+          (height . ,ivy-height)
+          ))))
+
+(defun posframe-poshandler-frame-top-center-margin (info)
+  "Posframe's position handler.
+Get a position which let posframe stay onto its
+parent-frame's top center.  The structure of INFO can
+be found in docstring of `posframe-show'."
+  (cons (/ (- (plist-get info :parent-frame-width)
+              (plist-get info :posframe-width))
+           2)
+        100))
+
+(defun thomas/ivy-posframe-display-at-frame-top-center (str)
+  (ivy-posframe--display str #'posframe-poshandler-frame-top-center-margin))
+
+
+(use-package! ivy-posframe
+  :hook (ivy-mode . ivy-posframe-mode)
+  :config
+  (add-hook! 'ivy-posframe-hook #'set-ivy-posframe-width)
+  (setq ivy-fixed-height-minibuffer nil
+        ivy-posframe-display-functions-alist '((t . thomas/ivy-posframe-display-at-frame-top-center))
+        ivy-posframe-border-width 2
+        ivy-posframe-parameters
+        `((min-width . 90)
+          (width . ,ivy-posframe-width)
+          (min-height . ,ivy-height)
+          (height . ,ivy-height)
+          ))
+
+  ;; default to posframe display function
+  ;(setf (alist-get t ivy-posframe-display-functions-alist)
+  ;      #'+ivy-display-at-frame-center-near-bottom-fn)
+
+
+  ;; posframe doesn't work well with async sources (the posframe will
+  ;; occasionally stop responding/redrawing), and causes violent resizing of the
+  ;; posframe.
+  (dolist (fn '(swiper counsel-rg counsel-grep counsel-git-grep))
+    (setf (alist-get fn ivy-posframe-display-functions-alist)
+          #'ivy-display-function-fallback))
+
+  (add-hook 'doom-after-reload-hook #'posframe-delete-all))
 
 (use-package! org-fragtog
   :after org
@@ -112,6 +182,34 @@
               #'org-roam-reflinks-insert-section
               #'org-roam-unlinked-references-insert-section))
   (org-roam-setup))
+
+(use-package! org-roam-ui
+  :after org-roam
+  :config
+  (setq org-roam-ui-open-on-start nil)
+  (setq org-roam-ui-browser-function #'xwidget-webkit-browse-url))
+
+(after! org-roam
+    (setq org-roam-capture-templates
+          `(("s" "standard" plain "%?"
+     :if-new
+     (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
+      "#+title: ${title}\n#+file_tags: \n\n* ${title}\n\n")
+     :unnarrowed t)
+        ("d" "definition" plain
+         "%?"
+         :if-new
+         (file+head "${slug}.org" "#+title: ${title}\n#+file_tags: definition \n\n* ${title}\n\n\n* Examples\n")
+         :unnarrowed t)
+        ("r" "ref" plain "%?"
+           :if-new
+           (file+head "${citekey}.org"
+           "#+title: ${slug}: ${title}\n
+\n#+file_tags: reference ${keywords} \n
+\n* ${title}\n\n
+\n* Summary
+\n\n\n* Rough note space\n")
+           :unnarrowed t))))
 
 ;; Since the org module lazy loads org-protocol (waits until an org URL is
 ;; detected), we can safely chain `org-roam-protocol' to it.
@@ -157,24 +255,14 @@
 
 (use-package! org-roam-bibtex
   :after org-roam
-  :hook (org-roam-mode . org-roam-bibtex-mode)
+  :hook (org-mode . org-roam-bibtex-mode)
   :config
   (require 'org-ref)
   (setq orb-preformat-keywords
-   '("citekey" "title" "url" "file" "author-or-editor" "keywords" "pdf" "doi" "author" "tags"))
-  (setq orb-templates
-        '(("r" "ref" plain (function org-roam-capture--get-point)
-           ""
-           :file-name "${slug}"
-           :head "#+TITLE: ${citekey}: ${title}\n#+ROAM_KEY: ${ref}
-\n#+ROAM_TAGS: reference ${keywords} \n
-\n* ${title}\n  :PROPERTIES:\n  :Custom_ID: ${citekey}\n  :DOI: ${doi}\n  :AUTHOR: ${author}\n  :END:\n\n
-\n* Summary
-\n\n\n* Rough note space\n"
-           :unnarrowed t))))
+   '("citekey" "title" "url" "file" "author-or-editor" "keywords" "pdf" "doi" "author" "tags" "year" "author-bbrev")))
 ;)
 
-(use-package! org-noter
+   (use-package! org-noter
   :after (:any org pdf-view)
   :config
   (setq
@@ -198,7 +286,7 @@
   (with-eval-after-load 'pdf-annot
     (add-hook 'pdf-annot-activate-handler-functions #'org-noter-pdftools-jump-to-note)))
 
-(use-package! nroam
+        (use-package! nroam
   :after org-roam
   :config
   (add-hook 'org-roam-mode-hook  #'nroam-setup-maybe)
@@ -228,7 +316,7 @@
 
 (add-hook! 'org-mode-hook #'org-mode-remove-stars)
 
-;; hide title / author ... keywords
+  ;; hide title / author ... keywords
 
 ;;; Ugly org hooks
 (defun nicer-org ()
@@ -296,7 +384,7 @@
     '(org-level-3 :height 1.1 :weight regular :slant normal)
     ;'(org-document-info  :inherit 'nano-face-faded)
     '(org-document-title   ;:foreground ,(doom-color 'black)
-                           :family "Noto Serif"
+                           :family "Roboto Slab"
                            :height 250
                            :weight medium)))
 
@@ -309,7 +397,7 @@
           ("~" code)
           ("+" (:strike-through t)))))
 
-(after! org
+        (after! org
 (setq org-ellipsis " ▾ ")
   (appendq! +ligatures-extra-symbols
           `(:checkbox      "☐"
@@ -745,7 +833,7 @@ Imitates the look of wordprocessors a bit."
         (display-line-numbers-mode -1))
     (display-line-numbers-mode 1)))
 
-;;;;;;;;
+                ;;;;;;;;
 ;;
 ;; org-latex-export
 ;;
@@ -809,6 +897,127 @@ Imitates the look of wordprocessors a bit."
     ;(add-to-list 'org-latex-default-packages-alist '("style=apa, backend=biber" "biblatex" nil)))
     ;(setq org-format-latex-header (concat org-format-latex-header "\n\\")))
 
+(use-package! devdocs
+  :after lsp
+  :config
+  (add-hook! 'devdocs-mode-hook
+    (face-remap-add-relative 'variable-pitch '(:family "Noto Sans"))))
+
+(add-hook! 'after-init-hook
+           (progn
+  (setq-hook! 'typescript-mode-hook +format-with :nil)
+  (add-hook! 'typescript-mode-hook 'prettier-mode)
+  (setq-hook! 'rjsx-mode-hook +format-with :nil)
+  (add-hook! 'rjsx-mode-hook 'prettier-mode)
+  (setq-hook! 'js2-mode-hook +format-with :nil)
+  (add-hook! 'js2-mode-hook 'prettier-mode)
+  (setq-hook! 'typescript-tsx-mode-hook +format-with :nil)
+  (add-hook! 'typescript-tsx-mode-hook 'prettier-mode)
+  ))
+
+(use-package! eva
+:init
+  (setq eva-ai-name "Ea"
+        eva-user-name "Thomas"
+        eva-user-birthday "2021-07-16"
+        eva-user-short-title "Bruh"
+        eva-fallback-to-emacs-idle t)
+      (setq eva--idle-secs-fn #'eva--idle-secs-gnome)
+  (setq eva-idle-log-path         "~/OneDrive/self/data/idle.tsv")
+  (setq eva-buffer-focus-log-path "~/OneDrive/self/data/buffer-focus.tsv")
+  (setq eva-buffer-info-path      "~/OneDrive/self/data/buffer-info.tsv")
+  (setq eva-main-ledger-path      "~OneDrive/self/journal/finances/l.ledger")
+  (setq eva-main-datetree-path    "~/OneDrive/self/journal/diary.org")
+  :config
+    (require 'eva-builtin)
+  (require 'eva-activity)
+    (add-hook 'eva-after-load-vars-hook #'eva-check-dangling-clock)
+  (add-hook 'eva-after-load-vars-hook #'eva-check-org-variables)
+   (setq eva-items
+        (list
+         (eva-item-create :fn #'eva-greet
+                          :min-hours-wait 1)
+
+         (eva-item-create :fn #'eva-query-mood
+                          :dataset "~/OneDrive/self/data/mood.tsv"
+                          :min-hours-wait 1)
+
+         (eva-item-create :fn #'eva-query-activity
+                          :dataset "~/OneDrive/self/data/activities.tsv"
+                          :min-hours-wait 1)
+
+         (eva-item-create :fn #'eva-present-diary
+                          :max-successes-per-day 1)
+
+         (eva-item-create :fn #'eva-query-weight
+                          :dataset "~/OneDrive/self/data/weight.tsv"
+                          :max-entries-per-day 1)
+
+         (eva-item-create :fn #'eva-plot-weight
+                          :max-entries-per-day 1)
+
+         (eva-item-create :fn #'eva-query-sleep
+                          :dataset "~/OneDrive/self/data/sleep.tsv"
+                          :min-hours-wait 5
+                          :lookup-posted-time t)
+
+         (eva-item-create :fn #'eva-present-ledger-report)
+
+         (eva-item-create :fn #'eva-present-org-agenda)
+
+         (eva-item-create :fn #'eva-query-ingredients
+                          :dataset "~/OneDrive/self/data/ingredients.tsv"
+                          :min-hours-wait 5)
+
+         (eva-item-create :fn #'eva-query-cold-shower
+                          :dataset "~/OneDrive/self/data/cold.tsv"
+                          :max-entries-per-day 1)
+
+         ;; you can inline define the functions too
+         (eva-item-create
+          :fn (eva-defun my-bye ()
+                (message (eva-emit "All done for now."))
+                (bury-buffer (eva-buffer-chat)))
+          :min-hours-wait 0)))
+        (transient-replace-suffix 'eva-dispatch '(0)
+    '["General actions"
+      ("q" "Quit" bury-buffer)
+      ("l" "View Ledger report" eva-present-ledger-report)
+      ("f" "View Ledger file" eva-present-ledger-file)
+      ("a" "View Org agenda" org-agenda-list)])
+
+  (define-key eva-chat-mode-map (kbd "l") #'eva-present-ledger-report)
+  (define-key eva-chat-mode-map (kbd "a") #'org-agenda-list)
+
+  ;; Activities
+  (setq eva-activity-list
+        (list (eva-activity-create :name "sleep"
+                                   :cost-false-pos 3
+                                   :cost-false-neg 3)
+
+              (eva-activity-create :name "studying"
+                                   :cost-false-pos 8
+                                   :cost-false-neg 8)
+
+              (eva-activity-create :name "coding"
+                                   :cost-false-pos 5
+                                   :cost-false-neg 5)
+
+              (eva-activity-create :name "unknown"
+                                   :cost-false-pos 0
+                                   :cost-false-neg 0)))
+  (eva-mode))
+
+        ;;;;;;;;;;;;;
+;;;
+;;; Other
+;;;
+;;;;;;;;;;;;
+
+(setq vterm-shell "/usr/bin/fish")
+
+(setq evil-escape-key-sequence "qd")
+
 ;(use-package! tree-sitter
 ;  :config
 ;  (require 'tree-sitter-langs)
@@ -828,6 +1037,51 @@ Imitates the look of wordprocessors a bit."
 
 (add-hook 'Info-selection-hook 'info-colors-fontify-node)
 
+(map! :leader (:prefix "r" (:prefix "r" nil)))
+(map! :leader
+      (:prefix ("r" . "roam")
+       :desc "find file"            "f"   #'org-roam-node-find
+       :desc "find ref"             "F"   #'org-roam-ref-find
+       :desc "center scroll"        "s"   #'prot/scroll-center-cursor-mode
+       :desc "start taking notes"   "S"   #'org-noter
+       :desc "toggle buffer"        "b"   #'org-roam-buffer-toggle
+       :desc "insert note"          "i"   #'org-roam-node-insert
+       :desc "server"               "g"   #'org-roam-server
+       :desc "quit notes"           "q"   #'org-noter-kill-session
+       :desc "tag (roam)"           "t"   #'org-roam-tag-add
+       :desc "tag (org)"            "T"   #'org-set-tags-command
+       :desc "pomodoro"             "p"   #'org-pomodoro
+       :desc "change nano-theme"    "n"   #'nano-toggle-theme
+       :desc "rebuid db"            "d"   #'org-roam-db-build-cache
+       :desc "cite"                 "c"   #'helm-bibtex
+       :desc "thesaurus this word"  "w"  #'powerthesaurus-lookup-word-at-point
+       :desc "thesaurus lookup word" "W"   #'powerthesaurus-lookup-word
+       :desc "outline"              "o"   #'org-ol-tree
+       (:prefix  ("R" . "orui")
+                :desc "orui-mode" "r" #'org-roam-ui-mode
+                :desc "zoom" "z" #'orui-node-zoom
+                :desc "open" "o" #'orui-open
+                :desc "local" "l" #'orui-node-local
+                :desc "sync theme" "t" #'orui-sync-theme
+                :desc "follow" "f" #'orui-follow-mode)
+       (:prefix ("m" . "transclusion")
+                :desc "make link"            "m"   #'org-transclusion-make-from-link
+                :desc "transclusion mode"    "t"   #'org-transclusion-mode
+                :desc "add at point"         "a"   #'org-transclusion-add-at-point
+                :desc "add all in buffer"    "A"   #'org-transclusion-add-all-in-buffer
+                :desc "remove at point"      "r"   #'org-transclusion-remove-at-point
+                :desc "remove all in buffer" "R"   #'org-transclusion-remove-all-in-buffer
+                :desc "start live edit"      "s"   #'org-transclusion-live-sync-start-at-point
+                :desc "stop live edit"       "S"   #'org-transclusion-live-sync-exit-at-point)
+       )
+      (:prefix ("d" . "GTD")
+       :desc  "process inbox" "p"#'org-gtd-process-inbox
+       :desc  "agenda list" "a"#'org-agenda-list
+       :desc  "capture" "c"#'org-gtd-capture
+       :desc  "show next" "n" #'org-gtd-show-all-next
+       :desc  "show stuck project" "s" #'org-gtd-show-stuck-projects)
+      )
+
 (evil-workman-global-mode t)
 
 (map!
@@ -841,11 +1095,9 @@ Imitates the look of wordprocessors a bit."
       "o" #'evil-window-right
       "O" #'+evil/window-move-right)
 
-(add-hook! 'org-mode-hook #'set-evil-keybindings)
-
 (defun set-evil-keybindings ()
   (progn
-  (iscroll-mode 1)
+  ;(iscroll-mode 1)
   (setq evil-org-movement-bindings
         '((up . "e")
           (down . "n")
@@ -859,22 +1111,29 @@ Imitates the look of wordprocessors a bit."
     "gn"        'org-down-element
     "ge"        'org-up-element
     "go"        'org-forward-element
-;    "n"         'evil-next-visual-line
-;    "e"         'evil-previous-visual-line
-    "n"         'iscroll-forward-line
-    "e"         'iscroll-previous-line
+    "n"         'evil-next-visual-line
+    "e"         'evil-previous-visual-line
+;    "n"         'iscroll-forward-line
+;    "e"         'iscroll-previous-line
     "N"         'evil-next-line
     "E"         'evil-previous-line
     (kbd "C-n") 'follow-scroll-up
     (kbd "C-e") 'follow-scroll-down
     "zn"        '+org-tree-to-indirect-other-window
     "zs"        '+org-tree-to-indirect-current-window
-    "zv"        '+org-tree-to-indirect-other-frame
-  )
+    "zv"        '+org-tree-to-indirect-other-frame)
+  ))
+
+(after! org (set-evil-keybindings))
+
+;; JUST TO BE REALLY FUCKING SURE
+(add-hook! 'org-mode-hook #'set-evil-keybindings)
+
+(defun iscroll-mode-keybinds ()
   (when (eq iscroll-mode t)
       (evil-define-key 'normal evil-org-mode-map
         "n" 'iscroll-forward-line
-        "e" 'iscroll-previous-line))))
+        "e" 'iscroll-previous-line)))
 
 (use-package! all-the-icons-ivy-rich
   :init (all-the-icons-ivy-rich-mode))
@@ -896,65 +1155,3 @@ Imitates the look of wordprocessors a bit."
 (defun org-latex-clear-preview ()
   (interactive)
   (org-clear-latex-preview))
-
-(after! doom-modeline
-  (setq doom-modeline-enable-word-count t
-        doom-modeline-header-line nil
-        ;doom-modeline-hud nil
-        doom-themes-padded-modeline t
-        doom-flatwhite-brighter-modeline nil
-        doom-plain-brighter-modeline nil))
-(add-hook! 'doom-modeline-mode-hook
-           (progn
-  (set-face-attribute 'header-line nil
-                      :background (face-background 'mode-line)
-                      :foreground (face-foreground 'mode-line))
-  ))
-
-;;;;;;;;;;;;;
-;;;
-;;; Other
-;;;
-;;;;;;;;;;;;
-
-(setq vterm-shell "/usr/bin/fish")
-
-(setq evil-escape-key-sequence "qd")
-
-(map! :leader
-      (:prefix ("r" . "roam")
-       :desc "find file"            "f"   #'org-roam-node-find
-       :desc "find ref"             "F"   #'org-roam-ref-find
-       :desc "highlight"            "r"   #'org-noter-insert-note
-       :desc "center scroll"        "s"   #'prot/scroll-center-cursor-mode
-       :desc "start taking notes"   "S"   #'org-noter
-       :desc "toggle buffer"        "b"   #'org-roam-buffer-toggle
-       :desc "insert note"          "i"   #'org-roam-node-insert
-       :desc "server"               "g"   #'org-roam-server
-       :desc "quit notes"           "q"   #'org-noter-kill-session
-       :desc "tag (roam)"           "t"   #'org-roam-tag-add
-       :desc "tag (org)"            "T"   #'org-set-tags-command
-       :desc "pomodoro"             "p"   #'org-pomodoro
-       :desc "change nano-theme"    "n"   #'nano-toggle-theme
-       :desc "rebuid db"            "d"   #'org-roam-db-build-cache
-       :desc "cite"                 "c"   #'helm-bibtex
-       :desc "thesaurus this word"  "w"  #'powerthesaurus-lookup-word-at-point
-       :desc "thesaurus lookup word" "W"   #'powerthesaurus-lookup-word
-       :desc "outline"              "o"   #'org-ol-tree
-       (:prefix ("m" . "transclusion")
-                :desc "make link"            "m"   #'org-transclusion-make-from-link
-                :desc "transclusion mode"    "t"   #'org-transclusion-mode
-                :desc "add at point"         "a"   #'org-transclusion-add-at-point
-                :desc "add all in buffer"    "A"   #'org-transclusion-add-all-in-buffer
-                :desc "remove at point"      "r"   #'org-transclusion-remove-at-point
-                :desc "remove all in buffer" "R"   #'org-transclusion-remove-all-in-buffer
-                :desc "start live edit"      "s"   #'org-transclusion-live-sync-start-at-point
-                :desc "stop live edit"       "S"   #'org-transclusion-live-sync-exit-at-point)
-       )
-      (:prefix ("d" . "GTD")
-       :desc  "process inbox" "p"#'org-gtd-process-inbox
-       :desc  "agenda list" "a"#'org-agenda-list
-       :desc  "capture" "c"#'org-gtd-capture
-       :desc  "show next" "n" #'org-gtd-show-all-next
-       :desc  "show stuck project" "s" #'org-gtd-show-stuck-projects)
-      )

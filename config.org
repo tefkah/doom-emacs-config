@@ -145,7 +145,7 @@ To set the fringes how i want them
 
 #+begin_src emacs-lisp :tangle yes
 (setq doom-font (font-spec :family "Fira Code" :size 15 :weight 'semi-light)
-       doom-variable-pitch-font (font-spec :family "Noto Serif" :style "Regular" :size 18 :weight 'regular))
+       doom-variable-pitch-font (font-spec :family "Roboto" :style "Regular" :size 18 :weight 'regular))
 
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You an either set `doom-theme' or manually load a theme with the
@@ -549,6 +549,70 @@ terminals, cursor blinking is controlled by the terminal."
 (setq blink-cursor-alist '((box . box)))
 (setq blinking-cursor-mode 1)
 #+end_src
+** Ivy
+The Doom defaults are nice, but I really dislike that  the size of the posframe keeps changing.
+Also I want it to be on top and with some margin, which requires some extra config
+#+begin_src emacs-lisp :tangle yes
+(setq ivy-posframe-width
+  (round (* 0.6 (frame-width))))
+
+;; Please just keep the width fixed
+(defun set-ivy-posframe-width ()
+  (progn
+ (setq ivy-posframe-width (round (* 0.6 (frame-width)))
+        ivy-posframe-parameters
+        `((min-width . 90)
+          (width . ,ivy-posframe-width)
+          (min-height . ,ivy-height)
+          (height . ,ivy-height)
+          ))))
+
+(defun posframe-poshandler-frame-top-center-margin (info)
+  "Posframe's position handler.
+Get a position which let posframe stay onto its
+parent-frame's top center.  The structure of INFO can
+be found in docstring of `posframe-show'."
+  (cons (/ (- (plist-get info :parent-frame-width)
+              (plist-get info :posframe-width))
+           2)
+        100))
+
+(defun thomas/ivy-posframe-display-at-frame-top-center (str)
+  (ivy-posframe--display str #'posframe-poshandler-frame-top-center-margin))
+
+
+(use-package! ivy-posframe
+  :hook (ivy-mode . ivy-posframe-mode)
+  :config
+  (add-hook! 'ivy-posframe-hook #'set-ivy-posframe-width)
+  (setq ivy-fixed-height-minibuffer nil
+        ivy-posframe-display-functions-alist '((t . thomas/ivy-posframe-display-at-frame-top-center))
+        ivy-posframe-border-width 2
+        ivy-posframe-parameters
+        `((min-width . 90)
+          (width . ,ivy-posframe-width)
+          (min-height . ,ivy-height)
+          (height . ,ivy-height)
+          ))
+
+  ;; default to posframe display function
+  ;(setf (alist-get t ivy-posframe-display-functions-alist)
+  ;      #'+ivy-display-at-frame-center-near-bottom-fn)
+
+
+  ;; posframe doesn't work well with async sources (the posframe will
+  ;; occasionally stop responding/redrawing), and causes violent resizing of the
+  ;; posframe.
+  (dolist (fn '(swiper counsel-rg counsel-grep counsel-git-grep))
+    (setf (alist-get fn ivy-posframe-display-functions-alist)
+          #'ivy-display-function-fallback))
+
+  (add-hook 'doom-after-reload-hook #'posframe-delete-all))
+#+end_src
+
+#+RESULTS:
+| ivy-posframe-mode |
+
 * Org-Mode customization
 
 
@@ -605,6 +669,17 @@ Fantastic package which allows you to backlink etc.
               #'org-roam-unlinked-references-insert-section))
   (org-roam-setup))
  #+end_src
+*** Org-Roam-UI
+My baby
+
+#+begin_src emacs-lisp :tangle yes
+(use-package! org-roam-ui
+  :after org-roam
+  :config
+  (setq org-roam-ui-open-on-start nil)
+  (setq org-roam-ui-browser-function #'xwidget-webkit-browse-url))
+#+end_src
+
 *** doom emacs config
      #+begin_src emacs-lisp :tangle no
         (defvar +org-roam-open-buffer-on-find-file nil
@@ -686,20 +761,28 @@ Fantastic package which allows you to backlink etc.
 
 *** Org-roam-capture templates
 
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp :tangle yes
 (after! org-roam
     (setq org-roam-capture-templates
-          `(("s" "standard" plain (function org-roam--capture-get-point)
-     "%?"
-     :file-name "%<%Y%m%d%H%M%S>-${slug}"
-     :head "#+title: ${title}\n#+roam_tags: \n\n* ${title}\n\n"
+          `(("s" "standard" plain "%?"
+     :if-new
+     (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
+      "#+title: ${title}\n#+file_tags: \n\n* ${title}\n\n")
      :unnarrowed t)
-        ("d" "definition" plain (function org-roam--capture-get-point)
+        ("d" "definition" plain
          "%?"
-         :file-name "${slug}"
-         :head "#+title: ${title}\n#+roam_tags: definition \n\n* ${title}\n\n\n* Examples\n"
-         :unnarrowed t)))
-  )
+         :if-new
+         (file+head "${slug}.org" "#+title: ${title}\n#+file_tags: definition \n\n* ${title}\n\n\n* Examples\n")
+         :unnarrowed t)
+        ("r" "ref" plain "%?"
+           :if-new
+           (file+head "${citekey}.org"
+           "#+title: ${slug}: ${title}\n
+\n#+file_tags: reference ${keywords} \n
+\n* ${title}\n\n
+\n* Summary
+\n\n\n* Rough note space\n")
+           :unnarrowed t))))
 
 #+end_src
 
@@ -810,21 +893,11 @@ ORB
 
 (use-package! org-roam-bibtex
   :after org-roam
-  :hook (org-roam-mode . org-roam-bibtex-mode)
+  :hook (org-mode . org-roam-bibtex-mode)
   :config
   (require 'org-ref)
   (setq orb-preformat-keywords
-   '("citekey" "title" "url" "file" "author-or-editor" "keywords" "pdf" "doi" "author" "tags"))
-  (setq orb-templates
-        '(("r" "ref" plain (function org-roam-capture--get-point)
-           ""
-           :file-name "${slug}"
-           :head "#+TITLE: ${citekey}: ${title}\n#+ROAM_KEY: ${ref}
-\n#+ROAM_TAGS: reference ${keywords} \n
-\n* ${title}\n  :PROPERTIES:\n  :Custom_ID: ${citekey}\n  :DOI: ${doi}\n  :AUTHOR: ${author}\n  :END:\n\n
-\n* Summary
-\n\n\n* Rough note space\n"
-           :unnarrowed t))))
+   '("citekey" "title" "url" "file" "author-or-editor" "keywords" "pdf" "doi" "author" "tags" "year" "author-bbrev")))
 ;)
 #+end_src
 ** To do things with pdfs with
@@ -994,7 +1067,7 @@ A lil bigger. No a lil smaller. Peeerrrfect.
     '(org-level-3 :height 1.1 :weight regular :slant normal)
     ;'(org-document-info  :inherit 'nano-face-faded)
     '(org-document-title   ;:foreground ,(doom-color 'black)
-                           :family "Noto Serif"
+                           :family "Roboto Slab"
                            :height 250
                            :weight medium)))
 #+end_src
@@ -2172,6 +2245,129 @@ Why does it not simply do what I intend?
 
 
 
+* Programming
+** Docs
+#+begin_src emacs-lisp :tangle yes
+(use-package! devdocs
+  :after lsp
+  :config
+  (add-hook! 'devdocs-mode-hook
+    (face-remap-add-relative 'variable-pitch '(:family "Noto Sans"))))
+#+end_src
+** LSP
+LSP auto format is nice, but not as configurable as prettier, better let prettier handle it.
+#+begin_src emacs-lisp :tangle yes
+(add-hook! 'after-init-hook
+           (progn
+  (setq-hook! 'typescript-mode-hook +format-with :nil)
+  (add-hook! 'typescript-mode-hook 'prettier-mode)
+  (setq-hook! 'rjsx-mode-hook +format-with :nil)
+  (add-hook! 'rjsx-mode-hook 'prettier-mode)
+  (setq-hook! 'js2-mode-hook +format-with :nil)
+  (add-hook! 'js2-mode-hook 'prettier-mode)
+  (setq-hook! 'typescript-tsx-mode-hook +format-with :nil)
+  (add-hook! 'typescript-tsx-mode-hook 'prettier-mode)
+  ))
+#+end_src
+
+* EVA
+
+The future is here.
+#+begin_src emacs-lisp :tangle yes
+
+(use-package! eva
+:init
+  (setq eva-ai-name "Ea"
+        eva-user-name "Thomas"
+        eva-user-birthday "2021-07-16"
+        eva-user-short-title "Bruh"
+        eva-fallback-to-emacs-idle t)
+      (setq eva--idle-secs-fn #'eva--idle-secs-gnome)
+  (setq eva-idle-log-path         "~/OneDrive/self/data/idle.tsv")
+  (setq eva-buffer-focus-log-path "~/OneDrive/self/data/buffer-focus.tsv")
+  (setq eva-buffer-info-path      "~/OneDrive/self/data/buffer-info.tsv")
+  (setq eva-main-ledger-path      "~OneDrive/self/journal/finances/l.ledger")
+  (setq eva-main-datetree-path    "~/OneDrive/self/journal/diary.org")
+  :config
+    (require 'eva-builtin)
+  (require 'eva-activity)
+    (add-hook 'eva-after-load-vars-hook #'eva-check-dangling-clock)
+  (add-hook 'eva-after-load-vars-hook #'eva-check-org-variables)
+   (setq eva-items
+        (list
+         (eva-item-create :fn #'eva-greet
+                          :min-hours-wait 1)
+
+         (eva-item-create :fn #'eva-query-mood
+                          :dataset "~/OneDrive/self/data/mood.tsv"
+                          :min-hours-wait 1)
+
+         (eva-item-create :fn #'eva-query-activity
+                          :dataset "~/OneDrive/self/data/activities.tsv"
+                          :min-hours-wait 1)
+
+         (eva-item-create :fn #'eva-present-diary
+                          :max-successes-per-day 1)
+
+         (eva-item-create :fn #'eva-query-weight
+                          :dataset "~/OneDrive/self/data/weight.tsv"
+                          :max-entries-per-day 1)
+
+         (eva-item-create :fn #'eva-plot-weight
+                          :max-entries-per-day 1)
+
+         (eva-item-create :fn #'eva-query-sleep
+                          :dataset "~/OneDrive/self/data/sleep.tsv"
+                          :min-hours-wait 5
+                          :lookup-posted-time t)
+
+         (eva-item-create :fn #'eva-present-ledger-report)
+
+         (eva-item-create :fn #'eva-present-org-agenda)
+
+         (eva-item-create :fn #'eva-query-ingredients
+                          :dataset "~/OneDrive/self/data/ingredients.tsv"
+                          :min-hours-wait 5)
+
+         (eva-item-create :fn #'eva-query-cold-shower
+                          :dataset "~/OneDrive/self/data/cold.tsv"
+                          :max-entries-per-day 1)
+
+         ;; you can inline define the functions too
+         (eva-item-create
+          :fn (eva-defun my-bye ()
+                (message (eva-emit "All done for now."))
+                (bury-buffer (eva-buffer-chat)))
+          :min-hours-wait 0)))
+        (transient-replace-suffix 'eva-dispatch '(0)
+    '["General actions"
+      ("q" "Quit" bury-buffer)
+      ("l" "View Ledger report" eva-present-ledger-report)
+      ("f" "View Ledger file" eva-present-ledger-file)
+      ("a" "View Org agenda" org-agenda-list)])
+
+  (define-key eva-chat-mode-map (kbd "l") #'eva-present-ledger-report)
+  (define-key eva-chat-mode-map (kbd "a") #'org-agenda-list)
+
+  ;; Activities
+  (setq eva-activity-list
+        (list (eva-activity-create :name "sleep"
+                                   :cost-false-pos 3
+                                   :cost-false-neg 3)
+
+              (eva-activity-create :name "studying"
+                                   :cost-false-pos 8
+                                   :cost-false-neg 8)
+
+              (eva-activity-create :name "coding"
+                                   :cost-false-pos 5
+                                   :cost-false-neg 5)
+
+              (eva-activity-create :name "unknown"
+                                   :cost-false-pos 0
+                                   :cost-false-neg 0)))
+  (eva-mode))
+#+end_src
 * Some other things, such as vterm
 ** Mail
 
@@ -2227,11 +2423,11 @@ Colors in the info box, jeej.
 
 I just map everything to SPC-r because doom is not using it and r stands for roam.
 #+begin_src elisp :tangle yes
+(map! :leader (:prefix "r" (:prefix "r" nil)))
 (map! :leader
       (:prefix ("r" . "roam")
        :desc "find file"            "f"   #'org-roam-node-find
        :desc "find ref"             "F"   #'org-roam-ref-find
-       :desc "highlight"            "r"   #'org-noter-insert-note
        :desc "center scroll"        "s"   #'prot/scroll-center-cursor-mode
        :desc "start taking notes"   "S"   #'org-noter
        :desc "toggle buffer"        "b"   #'org-roam-buffer-toggle
@@ -2247,6 +2443,13 @@ I just map everything to SPC-r because doom is not using it and r stands for roa
        :desc "thesaurus this word"  "w"  #'powerthesaurus-lookup-word-at-point
        :desc "thesaurus lookup word" "W"   #'powerthesaurus-lookup-word
        :desc "outline"              "o"   #'org-ol-tree
+       (:prefix  ("R" . "orui")
+                :desc "orui-mode" "r" #'org-roam-ui-mode
+                :desc "zoom" "z" #'orui-node-zoom
+                :desc "open" "o" #'orui-open
+                :desc "local" "l" #'orui-node-local
+                :desc "sync theme" "t" #'orui-sync-theme
+                :desc "follow" "f" #'orui-follow-mode)
        (:prefix ("m" . "transclusion")
                 :desc "make link"            "m"   #'org-transclusion-make-from-link
                 :desc "transclusion mode"    "t"   #'org-transclusion-mode
@@ -2292,11 +2495,10 @@ This does not fix the window bindings, so we have to do that manually
 This does not apply them to org-mode, which uses evil-org.el, but those are easily customized
 
 #+begin_src emacs-lisp :tangle yes
-(add-hook! 'org-mode-hook #'set-evil-keybindings)
 
 (defun set-evil-keybindings ()
   (progn
-  (iscroll-mode 1)
+  ;(iscroll-mode 1)
   (setq evil-org-movement-bindings
         '((up . "e")
           (down . "n")
@@ -2310,25 +2512,33 @@ This does not apply them to org-mode, which uses evil-org.el, but those are easi
     "gn"        'org-down-element
     "ge"        'org-up-element
     "go"        'org-forward-element
-;    "n"         'evil-next-visual-line
-;    "e"         'evil-previous-visual-line
-    "n"         'iscroll-forward-line
-    "e"         'iscroll-previous-line
+    "n"         'evil-next-visual-line
+    "e"         'evil-previous-visual-line
+;    "n"         'iscroll-forward-line
+;    "e"         'iscroll-previous-line
     "N"         'evil-next-line
     "E"         'evil-previous-line
     (kbd "C-n") 'follow-scroll-up
     (kbd "C-e") 'follow-scroll-down
     "zn"        '+org-tree-to-indirect-other-window
     "zs"        '+org-tree-to-indirect-current-window
-    "zv"        '+org-tree-to-indirect-other-frame
-  )
+    "zv"        '+org-tree-to-indirect-other-frame)
+  ))
+
+(after! org (set-evil-keybindings))
+
+;; JUST TO BE REALLY FUCKING SURE
+(add-hook! 'org-mode-hook #'set-evil-keybindings)
+
+(defun iscroll-mode-keybinds ()
   (when (eq iscroll-mode t)
       (evil-define-key 'normal evil-org-mode-map
         "n" 'iscroll-forward-line
-        "e" 'iscroll-previous-line))))
+        "e" 'iscroll-previous-line)))
           #+end_src
 #+begin_src emacs-lisp :tangle no
 (add-hook! 'org-mode-hook #'iscroll-mode)
+(add-hook! 'iscroll-mode-hook #'iscroll-mode-keybinds)
 #+end_src
 
 ** Ivy

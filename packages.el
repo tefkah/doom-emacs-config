@@ -65,6 +65,7 @@
 ;           :files ("*")
 ;           :build (:not compile)))
 
+(package! org-roam-server)
 (package! ivy-bibtex)
 (package! org-ref)
 (package! org-roam-bibtex)
@@ -74,7 +75,7 @@
 
 (package! nano-emacs :recipe (:local-repo "~/Projects/emacs/nano-emacs"))
 (package! rainbow-mode)
-(package! org-transclusion :recipe (:local-repo "~/Projects/org-transclusion"
+(package! org-transclusion :recipe (:host github :repo "/nobiot/org-transclusion"
                                     ;:build (:not compile)
                                     ))
 (package! org-marginalia :recipe (:host github :repo "nobiot/org-marginalia"))
@@ -127,11 +128,6 @@
 (package! iscroll :recipe (:host github :repo "casouri/iscroll"))
 ;(package! yascroll)
 
-;; EAF stuff
-(package! eaf :recipe (:host github
-                            :repo "manateelazycat/emacs-application-framework"
-                            :files ("*.el" "*.py" "core" "app")))
-(package! epc)
 (package! ctable)
 (package! deferred)
 (package! s)
@@ -155,4 +151,13 @@
 
 (package! page-break-mode :recipe (:local-repo "~/Projects/emacs/page-break-mode"))
 
-(package! org-roam-ui :recipe (:local-repo "~/Projects/emacs/OrgRoamForceGraphReact"))
+(package! websocket)
+(package! org-roam-ui :recipe (:host github :repo "org-roam/org-roam-ui" :files ("*.el" "out")))
+(package! devdocs)
+(package! prettier)
+
+(package! eva
+    :recipe (:host github :repo "meedstrom/eva"
+           :files (:defaults "assets" "renv" "*.R" "*.gnuplot")))
+
+(package! ivy-posframe)
