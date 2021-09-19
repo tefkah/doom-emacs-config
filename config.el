@@ -52,7 +52,7 @@
 ;;
 ;;; Packages
 
-(setq doom-theme 'doom-plain)
+(setq doom-theme 'doom-flatwhite)
 
 (add-hook! 'solaire-mode-hook
   ;(set-face-attribute 'solaire-fringe-face nil :background (face-background 'solaire-hl-line-face))
@@ -64,7 +64,7 @@
   :config
   (setq mixed-pitch-face 'variable-pitch))
 
-(setq doom-font (font-spec :family "Fira Code" :size 15 :weight 'semi-light)
+(setq doom-font (font-spec :family "Iosevka SS05" :size 15 :weight 'light)
        doom-variable-pitch-font (font-spec :family "Roboto" :style "Regular" :size 18 :weight 'regular))
 
 ;; There are two ways to load a theme. Both assume the theme is installed and
@@ -72,40 +72,25 @@
 ;; `load-theme' function. This is the default:
 
 (after! doom-modeline
-  (setq doom-modeline-enable-word-count t
-        doom-modeline-header-line nil
-        ;doom-modeline-hud nil
-        doom-themes-padded-modeline t
-        doom-flatwhite-brighter-modeline nil
-        doom-plain-brighter-modeline nil))
-(add-hook! 'doom-modeline-mode-hook
-           (progn
-  (set-face-attribute 'header-line nil
-                      :background (face-background 'mode-line)
-                      :foreground (face-foreground 'mode-line))
-  ))
-
-(after! doom-modeline
   (doom-modeline-def-modeline 'main
     '(bar matches buffer-info vcs word-count)
-    '(buffer-position misc-info major-mode "                  "))
-  (custom-set-faces! '(mode-line :family "Fira Code"))
-  (doom-modeline--set-char-widths doom-modeline-rhs-icons-alist))
+    '(buffer-position misc-info major-mode)))
 
 (setq blink-cursor-alist '((box . box)))
 (setq blinking-cursor-mode 1)
 
+(defvar ivy-posframewidth 120)
 (setq ivy-posframe-width
   (round (* 0.6 (frame-width))))
 
 ;; Please just keep the width fixed
 (defun set-ivy-posframe-width ()
   (progn
- (setq ivy-posframe-width (round (* 0.6 (frame-width)))
-        ivy-posframe-parameters
+(setq ivy-posframe-width
+  (round (* 0.6 (frame-width))))
+(setq      ivy-posframe-parameters
         `((min-width . 90)
           (width . ,ivy-posframe-width)
-          (min-height . ,ivy-height)
           (height . ,ivy-height)
           ))))
 
@@ -194,27 +179,22 @@ be found in docstring of `posframe-show'."
           `(("s" "standard" plain "%?"
      :if-new
      (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
-      "#+title: ${title}\n#+file_tags: \n\n* ${title}\n\n")
+      "#+title: ${title}\n#+filetags: \n\n ")
      :unnarrowed t)
         ("d" "definition" plain
          "%?"
          :if-new
-         (file+head "${slug}.org" "#+title: ${title}\n#+file_tags: definition \n\n* ${title}\n\n\n* Examples\n")
+         (file+head "${slug}.org" "#+title: ${title}\n#+filetags: definition \n\n* Definition\n\n\n* Examples\n")
          :unnarrowed t)
         ("r" "ref" plain "%?"
            :if-new
            (file+head "${citekey}.org"
            "#+title: ${slug}: ${title}\n
-\n#+file_tags: reference ${keywords} \n
+\n#+filetags: reference ${keywords} \n
 \n* ${title}\n\n
 \n* Summary
 \n\n\n* Rough note space\n")
            :unnarrowed t))))
-
-;; Since the org module lazy loads org-protocol (waits until an org URL is
-;; detected), we can safely chain `org-roam-protocol' to it.
-(use-package! org-roam-protocol
-  :after org-protocol)
 
 (use-package! org-ref
     ;:after org-roam
@@ -262,36 +242,6 @@ be found in docstring of `posframe-show'."
    '("citekey" "title" "url" "file" "author-or-editor" "keywords" "pdf" "doi" "author" "tags" "year" "author-bbrev")))
 ;)
 
-   (use-package! org-noter
-  :after (:any org pdf-view)
-  :config
-  (setq
-   ;; The WM can handle splits
-   ;;org-noter-notes-window-location 'other-frame
-   ;; Please stop opening frames
-   ;;org-noter-always-create-frame nil
-   ;; I want to see the whole file
-   org-noter-hide-other nil
-   ;; Everything is relative to the rclone mega
-   org-noter-notes-search-path "/home/thomas/OneDrive/org-roam"
-   )
-  )
-
-
-(use-package! org-pdftools
-  :hook (org-load . org-pdftools-setup-link))
-(use-package! org-noter-pdftools
-  :after org-noter
-  :config
-  (with-eval-after-load 'pdf-annot
-    (add-hook 'pdf-annot-activate-handler-functions #'org-noter-pdftools-jump-to-note)))
-
-        (use-package! nroam
-  :after org-roam
-  :config
-  (add-hook 'org-roam-mode-hook  #'nroam-setup-maybe)
-)
-
 (use-package! org-ol-tree
   :after org
   :commands org-ol-tree
@@ -316,7 +266,7 @@ be found in docstring of `posframe-show'."
 
 (add-hook! 'org-mode-hook #'org-mode-remove-stars)
 
-  ;; hide title / author ... keywords
+;; hide title / author ... keywords
 
 ;;; Ugly org hooks
 (defun nicer-org ()
@@ -338,14 +288,10 @@ be found in docstring of `posframe-show'."
         org-startup-with-inline-images 1 ;always preview images
         ;org-hide-leading-stars 1
         org-startup-indented nil         ; don't indent
-        ;org-superstar-headline-bullets-list`("\u200b")
   ;      org-startup-folded nil
-        ;org-startup-numerated 1         ; does not seem to work
-        org-hidden-keywords '(title author date startup roam_tags)
+        org-hidden-keywords '(filetags title author date startup roam_tags)
         org-pretty-entities 1            ; show unicode characters
         org-num-max-level 3              ; no 1.1.1.2
-        ;header-line-format nil
-        ;; Open indirect buffer in another window rather than this one
         org-indirect-buffer-display 'other-window
         ))
 
@@ -397,7 +343,7 @@ be found in docstring of `posframe-show'."
           ("~" code)
           ("+" (:strike-through t)))))
 
-        (after! org
+(after! org
 (setq org-ellipsis " ▾ ")
   (appendq! +ligatures-extra-symbols
           `(:checkbox      "☐"
@@ -483,7 +429,7 @@ be found in docstring of `posframe-show'."
   :priority_d    "[#D]"
   :priority_e    "[#E]"
   :roam_tags     "#+roam_tags:"
-  :filetags      "#+filetags")
+  :filetags      "#+filetags:")
 (plist-put +ligatures-extra-symbols :name "⁍")
 )
 
@@ -757,7 +703,7 @@ Imitates the look of wordprocessors a bit."
   :config
     (setq olivetti-min-body-width 50
           olivetti-body-width 80
-          olivetti-style t ; fantastic new layout
+          olivetti-style 'fancy ; fantastic new layout
           olivetti-margin-width 12)
     (add-hook! 'olivetti-mode-hook (window-divider-mode -1))
     (add-hook! 'olivetti-mode-hook (set-face-attribute 'window-divider nil :foreground (face-background 'fringe) :background (face-background 'fringe)))
@@ -833,7 +779,7 @@ Imitates the look of wordprocessors a bit."
         (display-line-numbers-mode -1))
     (display-line-numbers-mode 1)))
 
-                ;;;;;;;;
+;;;;;;;;
 ;;
 ;; org-latex-export
 ;;
@@ -897,6 +843,65 @@ Imitates the look of wordprocessors a bit."
     ;(add-to-list 'org-latex-default-packages-alist '("style=apa, backend=biber" "biblatex" nil)))
     ;(setq org-format-latex-header (concat org-format-latex-header "\n\\")))
 
+(add-hook! 'latex-mode-hook (setq TeX-engine 'xetex) 99)
+
+    ;  (call-process TeX-shell nil (TeX-process-buffer-name file) nil
+     ;               TeX-shell-command-option (concat command file))))
+
+(after! latex
+(defun latex-dwim ()
+  "Compile the current file if it's a .tex file using LaTeXMK.
+Otherwise compile the TeX file with the same name as the current TeXey file,
+such as a .cls or .bib.
+Otherwise compile all the .tex files you find using LaTexMK."
+  (interactive)
+  (save-buffer)
+  (if-let ((files (thomas/find-tex-file))
+           (command
+            "latexmk -pdf -pdflatex=lualatex --synctex=1 -interaction=nonstopmode  -file-line-error ")
+        (hook (nth 2 (assoc "LatexMk" TeX-command-list))))
+      (if (stringp files)
+      (TeX-run-format "LatexMk" (concat command files) files)
+        (dolist (file files)
+      (TeX-run-format "LatexMk" (concat command file) file)))
+    (message "No file found, whoops.")))
+
+(defun thomas/find-tex-file ()
+  "Find the correct TeX file(s)."
+  (let* ((fname (buffer-file-name))
+         (ext (file-name-extension fname))
+         (potential-main  (f-join (f-slash (f-parent fname)) (concat (f-base fname) ".tex")))
+         (alltex (f-entries (f-parent fname) (lambda (f) (f-ext-p f "tex"))))
+    (correct-file
+     (cond ((string= ext "tex")
+           fname)
+           ((seq-contains-p '("bib" "cls" "sty") ext)
+            (if (f-exists-p potential-main)
+                potential
+              alltex))
+           (t nil))))
+    correct-file)))
+
+(map! :map 'doom-leader-regular-map
+      :desc "LatexMk dwim" "l" #'latex-dwim)
+
+(add-hook! 'after-init-hook #'treemacs)
+
+(after! treemacs
+(add-hook! 'treemacs-mode-hook (setq window-divider-mode -1
+                                     variable-pitch-mode 1
+                                     treemacs-follow-mode 1))
+)
+
+(use-package! visual-regexp
+  :config
+        (map! :map 'doom-leader-regular-map
+              (:prefix ("v" . "visual regex")
+               :desc "Replace regexp" "r"#'vr/replace)))
+
+(use-package! visual-regexp-steroids
+  :after 'visual-regexp)
+
 (use-package! devdocs
   :after lsp
   :config
@@ -917,6 +922,8 @@ Imitates the look of wordprocessors a bit."
 
 (use-package! eva
 :init
+(setq ess-history-file "~/OneDrive/self/data/.Rhistory")
+(setq ess-ask-for-ess-directory nil)
   (setq eva-ai-name "Ea"
         eva-user-name "Thomas"
         eva-user-birthday "2021-07-16"
@@ -927,8 +934,10 @@ Imitates the look of wordprocessors a bit."
   (setq eva-buffer-focus-log-path "~/OneDrive/self/data/buffer-focus.tsv")
   (setq eva-buffer-info-path      "~/OneDrive/self/data/buffer-info.tsv")
   (setq eva-main-ledger-path      "~OneDrive/self/journal/finances/l.ledger")
-  (setq eva-main-datetree-path    "~/OneDrive/self/journal/diary.org")
+  (setq eva-main-datetree-path    "~/OneDrive/org-roam/diary.org")
   :config
+  (setq org-journal-dir "~/OneDrive/org-roam/journal")
+    (setq org-journal-file-format "%F.org")
     (require 'eva-builtin)
   (require 'eva-activity)
     (add-hook 'eva-after-load-vars-hook #'eva-check-dangling-clock)
@@ -1003,20 +1012,13 @@ Imitates the look of wordprocessors a bit."
                                    :cost-false-pos 5
                                    :cost-false-neg 5)
 
+              (eva-activity-create :name "working"
+                                   :cost-false-pos 5
+                                   :cost-false-neg 5)
               (eva-activity-create :name "unknown"
                                    :cost-false-pos 0
                                    :cost-false-neg 0)))
   (eva-mode))
-
-        ;;;;;;;;;;;;;
-;;;
-;;; Other
-;;;
-;;;;;;;;;;;;
-
-(setq vterm-shell "/usr/bin/fish")
-
-(setq evil-escape-key-sequence "qd")
 
 ;(use-package! tree-sitter
 ;  :config
@@ -1037,50 +1039,17 @@ Imitates the look of wordprocessors a bit."
 
 (add-hook 'Info-selection-hook 'info-colors-fontify-node)
 
-(map! :leader (:prefix "r" (:prefix "r" nil)))
-(map! :leader
-      (:prefix ("r" . "roam")
-       :desc "find file"            "f"   #'org-roam-node-find
-       :desc "find ref"             "F"   #'org-roam-ref-find
-       :desc "center scroll"        "s"   #'prot/scroll-center-cursor-mode
-       :desc "start taking notes"   "S"   #'org-noter
-       :desc "toggle buffer"        "b"   #'org-roam-buffer-toggle
-       :desc "insert note"          "i"   #'org-roam-node-insert
-       :desc "server"               "g"   #'org-roam-server
-       :desc "quit notes"           "q"   #'org-noter-kill-session
-       :desc "tag (roam)"           "t"   #'org-roam-tag-add
-       :desc "tag (org)"            "T"   #'org-set-tags-command
-       :desc "pomodoro"             "p"   #'org-pomodoro
-       :desc "change nano-theme"    "n"   #'nano-toggle-theme
-       :desc "rebuid db"            "d"   #'org-roam-db-build-cache
-       :desc "cite"                 "c"   #'helm-bibtex
-       :desc "thesaurus this word"  "w"  #'powerthesaurus-lookup-word-at-point
-       :desc "thesaurus lookup word" "W"   #'powerthesaurus-lookup-word
-       :desc "outline"              "o"   #'org-ol-tree
-       (:prefix  ("R" . "orui")
-                :desc "orui-mode" "r" #'org-roam-ui-mode
-                :desc "zoom" "z" #'orui-node-zoom
-                :desc "open" "o" #'orui-open
-                :desc "local" "l" #'orui-node-local
-                :desc "sync theme" "t" #'orui-sync-theme
-                :desc "follow" "f" #'orui-follow-mode)
-       (:prefix ("m" . "transclusion")
-                :desc "make link"            "m"   #'org-transclusion-make-from-link
-                :desc "transclusion mode"    "t"   #'org-transclusion-mode
-                :desc "add at point"         "a"   #'org-transclusion-add-at-point
-                :desc "add all in buffer"    "A"   #'org-transclusion-add-all-in-buffer
-                :desc "remove at point"      "r"   #'org-transclusion-remove-at-point
-                :desc "remove all in buffer" "R"   #'org-transclusion-remove-all-in-buffer
-                :desc "start live edit"      "s"   #'org-transclusion-live-sync-start-at-point
-                :desc "stop live edit"       "S"   #'org-transclusion-live-sync-exit-at-point)
-       )
-      (:prefix ("d" . "GTD")
-       :desc  "process inbox" "p"#'org-gtd-process-inbox
-       :desc  "agenda list" "a"#'org-agenda-list
-       :desc  "capture" "c"#'org-gtd-capture
-       :desc  "show next" "n" #'org-gtd-show-all-next
-       :desc  "show stuck project" "s" #'org-gtd-show-stuck-projects)
-      )
+(map! "C-w" nil)
+(global-set-key  (kbd "C-<tab>") #'evil-window-next)
+ (global-set-key             (kbd "C-<iso-lefttab>") #'evil-window-prev)
+     (global-set-key   (kbd "C-w") #'ace-window)
+
+(map!
+    :nvig "C-<iso-lefttab>" #'evil-window-prev
+      :nvig  "C-w" #'ace-window)
+(map! :nvig "C-<tab>" #'evil-window-next)
+
+(map!  :nvig "C-'" #'er/expand-region)
 
 (evil-workman-global-mode t)
 
@@ -1127,8 +1096,7 @@ Imitates the look of wordprocessors a bit."
 (after! org (set-evil-keybindings))
 
 ;; JUST TO BE REALLY FUCKING SURE
-(add-hook! 'org-mode-hook #'set-evil-keybindings)
-
+(add-hook 'org-mode-hook #'set-evil-keybindings 99)
 (defun iscroll-mode-keybinds ()
   (when (eq iscroll-mode t)
       (evil-define-key 'normal evil-org-mode-map
@@ -1155,3 +1123,73 @@ Imitates the look of wordprocessors a bit."
 (defun org-latex-clear-preview ()
   (interactive)
   (org-clear-latex-preview))
+
+(server-start)
+
+(after! doom-modeline
+  (setq doom-modeline-enable-word-count t
+        doom-modeline-header-line nil
+        ;doom-modeline-hud nil
+        doom-themes-padded-modeline t
+        doom-flatwhite-brighter-modeline nil
+        doom-plain-brighter-modeline nil))
+(add-hook! 'doom-modeline-mode-hook
+           (progn
+  (set-face-attribute 'header-line nil
+                      :background (face-background 'mode-line)
+                      :foreground (face-foreground 'mode-line))
+  ))
+
+;;;;;;;;;;;;;
+;;;
+;;; Other
+;;;
+;;;;;;;;;;;;
+
+(setq vterm-shell "/usr/bin/fish")
+
+(setq evil-escape-key-sequence "qd")
+
+(map! :leader
+      (:prefix-map ("r" . "regular")
+       :desc "find file"            "f"   #'org-roam-node-find
+       :desc "find ref"             "F"   #'org-roam-ref-find
+       :desc "center scroll"        "s"   #'prot/scroll-center-cursor-mode
+       :desc "start taking notes"   "S"   #'org-noter
+       :desc "toggle buffer"        "b"   #'org-roam-buffer-toggle
+       :desc "insert note"          "i"   #'org-roam-node-insert
+       :desc "server"               "g"   #'org-roam-server
+       :desc "quit notes"           "q"   #'org-noter-kill-session
+       :desc "tag (roam)"           "t"   #'org-roam-tag-add
+       :desc "tag (org)"            "T"   #'org-set-tags-command
+       :desc "pomodoro"             "p"   #'org-pomodoro
+       :desc "change nano-theme"    "n"   #'nano-toggle-theme
+       :desc "rebuid db"            "d"   #'org-roam-db-build-cache
+       :desc "cite"                 "c"   #'helm-bibtex
+       :desc "thesaurus this word"  "w"  #'powerthesaurus-lookup-word-at-point
+       :desc "thesaurus lookup word" "W"   #'powerthesaurus-lookup-word
+       :desc "outline"              "o"   #'org-ol-tree
+       (:prefix  ("r" . "orui")
+                :desc "orui-mode" "r" #'org-roam-ui-mode
+                :desc "zoom" "z" #'orui-node-zoom
+                :desc "open" "o" #'orui-open
+                :desc "local" "l" #'orui-node-local
+                :desc "sync theme" "t" #'orui-sync-theme
+                :desc "follow" "f" #'orui-follow-mode)
+       (:prefix ("m" . "transclusion")
+                :desc "make link"            "m"   #'org-transclusion-make-from-link
+                :desc "transclusion mode"    "t"   #'org-transclusion-mode
+                :desc "add at point"         "a"   #'org-transclusion-add-at-point
+                :desc "add all in buffer"    "A"   #'org-transclusion-add-all-in-buffer
+                :desc "remove at point"      "r"   #'org-transclusion-remove-at-point
+                :desc "remove all in buffer" "R"   #'org-transclusion-remove-all-in-buffer
+                :desc "start live edit"      "s"   #'org-transclusion-live-sync-start-at-point
+                :desc "stop live edit"       "S"   #'org-transclusion-live-sync-exit-at-point)
+       )
+      (:prefix ("d" . "GTD")
+       :desc  "process inbox" "p"#'org-gtd-process-inbox
+       :desc  "agenda list" "a"#'org-agenda-list
+       :desc  "capture" "c"#'org-gtd-capture
+       :desc  "show next" "n" #'org-gtd-show-all-next
+       :desc  "show stuck project" "s" #'org-gtd-show-stuck-projects)
+      )

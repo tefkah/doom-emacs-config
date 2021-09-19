@@ -123,10 +123,10 @@
 *** Doom
    I'm either using nano or doom-theme, this is the latter
    #+begin_src emacs-lisp :tangle yes
-(setq doom-theme 'doom-plain)
+(setq doom-theme 'doom-flatwhite)
    #+end_src
 
-To set the fringes how i want them
+To set the fringes how i want them, i.e, in the opposite color of the background.
 #+begin_src emacs-lisp :tangle yes
 (add-hook! 'solaire-mode-hook
   ;(set-face-attribute 'solaire-fringe-face nil :background (face-background 'solaire-hl-line-face))
@@ -136,6 +136,7 @@ To set the fringes how i want them
 
 ** Fonts
 
+It's nice to have both mono and proportional fonts in org-mode, but mostly proportional, as we are writing.
 #+begin_src emacs-lisp :tangle yes
 (use-package! mixed-pitch
   :hook (org-mode . mixed-pitch-mode)
@@ -143,8 +144,9 @@ To set the fringes how i want them
   (setq mixed-pitch-face 'variable-pitch))
 #+end_src
 
+There's not a lot of good fonts I've noticed. Fira code is the one I keep coming back to.
 #+begin_src emacs-lisp :tangle yes
-(setq doom-font (font-spec :family "Fira Code" :size 15 :weight 'semi-light)
+(setq doom-font (font-spec :family "Iosevka SS05" :size 15 :weight 'light)
        doom-variable-pitch-font (font-spec :family "Roboto" :style "Regular" :size 18 :weight 'regular))
 
 ;; There are two ways to load a theme. Both assume the theme is installed and
@@ -291,10 +293,7 @@ Trying to make my own thing work
 (after! doom-modeline
   (doom-modeline-def-modeline 'main
     '(bar matches buffer-info vcs word-count)
-    '(buffer-position misc-info major-mode "                  "))
-  (custom-set-faces! '(mode-line :family "Fira Code"))
-  (doom-modeline--set-char-widths doom-modeline-rhs-icons-alist))
-
+    '(buffer-position misc-info major-mode)))
 #+end_src
 
 *** Mlscroll
@@ -553,17 +552,18 @@ terminals, cursor blinking is controlled by the terminal."
 The Doom defaults are nice, but I really dislike that  the size of the posframe keeps changing.
 Also I want it to be on top and with some margin, which requires some extra config
 #+begin_src emacs-lisp :tangle yes
+(defvar ivy-posframewidth 120)
 (setq ivy-posframe-width
   (round (* 0.6 (frame-width))))
 
 ;; Please just keep the width fixed
 (defun set-ivy-posframe-width ()
   (progn
- (setq ivy-posframe-width (round (* 0.6 (frame-width)))
-        ivy-posframe-parameters
+(setq ivy-posframe-width
+  (round (* 0.6 (frame-width))))
+(setq      ivy-posframe-parameters
         `((min-width . 90)
           (width . ,ivy-posframe-width)
-          (min-height . ,ivy-height)
           (height . ,ivy-height)
           ))))
 
@@ -609,9 +609,6 @@ be found in docstring of `posframe-show'."
 
   (add-hook 'doom-after-reload-hook #'posframe-delete-all))
 #+end_src
-
-#+RESULTS:
-| ivy-posframe-mode |
 
 * Org-Mode customization
 
@@ -767,18 +764,18 @@ My baby
           `(("s" "standard" plain "%?"
      :if-new
      (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
-      "#+title: ${title}\n#+file_tags: \n\n* ${title}\n\n")
+      "#+title: ${title}\n#+filetags: \n\n ")
      :unnarrowed t)
         ("d" "definition" plain
          "%?"
          :if-new
-         (file+head "${slug}.org" "#+title: ${title}\n#+file_tags: definition \n\n* ${title}\n\n\n* Examples\n")
+         (file+head "${slug}.org" "#+title: ${title}\n#+filetags: definition \n\n* Definition\n\n\n* Examples\n")
          :unnarrowed t)
         ("r" "ref" plain "%?"
            :if-new
            (file+head "${citekey}.org"
            "#+title: ${slug}: ${title}\n
-\n#+file_tags: reference ${keywords} \n
+\n#+filetags: reference ${keywords} \n
 \n* ${title}\n\n
 \n* Summary
 \n\n\n* Rough note space\n")
@@ -788,7 +785,7 @@ My baby
 
 *** Server
 **** Protocol
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp :tangle no
 
 ;; Since the org module lazy loads org-protocol (waits until an org URL is
 ;; detected), we can safely chain `org-roam-protocol' to it.
@@ -903,7 +900,7 @@ ORB
 ** To do things with pdfs with
 
    Don't really use this anymore since zotero got a pdf reader
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp :tangle no
    (use-package! org-noter
   :after (:any org pdf-view)
   :config
@@ -932,7 +929,7 @@ ORB
 #+end_src
 
 nroam puts the org-roam buffer on the bottom, much more natural and less obstrustive, but not does cause some problems.
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp :tangle no
         (use-package! nroam
   :after org-roam
   :config
@@ -1004,25 +1001,17 @@ No but when I'm writing I don't want org's usual indentation and stars and all t
 *** Org variables
 
 #+begin_src emacs-lisp :tangle yes
-
-
 (after! org
   (setq org-startup-with-latex-preview 1 ;always preview latex
         org-startup-with-inline-images 1 ;always preview images
         ;org-hide-leading-stars 1
         org-startup-indented nil         ; don't indent
-        ;org-superstar-headline-bullets-list`("\u200b")
   ;      org-startup-folded nil
-        ;org-startup-numerated 1         ; does not seem to work
-        org-hidden-keywords '(title author date startup roam_tags)
+        org-hidden-keywords '(filetags title author date startup roam_tags)
         org-pretty-entities 1            ; show unicode characters
         org-num-max-level 3              ; no 1.1.1.2
-        ;header-line-format nil
-        ;; Open indirect buffer in another window rather than this one
         org-indirect-buffer-display 'other-window
         ))
-
-
 #+end_src
 
 **** Better indirect buffers
@@ -1073,7 +1062,7 @@ A lil bigger. No a lil smaller. Peeerrrfect.
 #+end_src
 *** emphsis faces
 
-I want to be able to do some kind of cruse highlighting, so = becomes =red=.
+I want to be able to do some kind of custom highlighting, so = becomes =red=.
 #+begin_src emacs-lisp :tangle yes
 (after! org
 (setq org-emphasis-alist
@@ -1177,7 +1166,7 @@ Ideally I would be able to add my own custom bullshit in here, but I don't know 
   :priority_d    "[#D]"
   :priority_e    "[#E]"
   :roam_tags     "#+roam_tags:"
-  :filetags      "#+filetags")
+  :filetags      "#+filetags:")
 (plist-put +ligatures-extra-symbols :name "⁍")
 )
 
@@ -1827,7 +1816,7 @@ I want thing to be in the middle, and  with olivetti mode the fringes become lar
   :config
     (setq olivetti-min-body-width 50
           olivetti-body-width 80
-          olivetti-style t ; fantastic new layout
+          olivetti-style 'fancy ; fantastic new layout
           olivetti-margin-width 12)
     (add-hook! 'olivetti-mode-hook (window-divider-mode -1))
     (add-hook! 'olivetti-mode-hook (set-face-attribute 'window-divider nil :foreground (face-background 'fringe) :background (face-background 'fringe)))
@@ -1874,15 +1863,16 @@ I want thing to be in the middle, and  with olivetti mode the fringes become lar
   )
 ;(require 'nano-writer)
  #+end_src
+
 *** My eyes, they don't work so good no more
-
-
  Increase the font-size a bit in org-mode
 
  FIXME: This is not how you do that dipshit
+ This increas the font size every singe time you open an org file, not ideal.
  #+begin_src emacs-lisp :tangle no
 (add-hook! 'org-mode-hook (doom/increase-font-size 1))
  #+end_src
+
 ** Custom org-mode profiles
 
 I would like org-mode to look and behave differently depending on what kind of note I'm visiting. Sometimes I want to write in an undistracted environment, sometimes I want to take notes and see a lot of things, sometimes I am configuring this thing and other times I'm going through my tasks: there's no real reason for org to look the same for all of these, and in fact that will probably end up more distracting than anything.
@@ -2245,7 +2235,93 @@ Why does it not simply do what I intend?
 
 
 
+
+* Latex
+My eternal enemy
+
+** Compilation
+I almost always want to fuck around with the fonts, so XeTeX is pretty much necessary. Although I would really like to learn LuaTex, I just haven't really seen any cool usecases of it.
+#+begin_src emacs-lisp :tangle yes
+(add-hook! 'latex-mode-hook (setq TeX-engine 'xetex) 99)
+
+    ;  (call-process TeX-shell nil (TeX-process-buffer-name file) nil
+     ;               TeX-shell-command-option (concat command file))))
+#+end_src
+
+#+begin_src emacs-lisp :tangle yes
+(after! latex
+(defun latex-dwim ()
+  "Compile the current file if it's a .tex file using LaTeXMK.
+Otherwise compile the TeX file with the same name as the current TeXey file,
+such as a .cls or .bib.
+Otherwise compile all the .tex files you find using LaTexMK."
+  (interactive)
+  (save-buffer)
+  (if-let ((files (thomas/find-tex-file))
+           (command
+            "latexmk -pdf -pdflatex=lualatex --synctex=1 -interaction=nonstopmode  -file-line-error ")
+        (hook (nth 2 (assoc "LatexMk" TeX-command-list))))
+      (if (stringp files)
+      (TeX-run-format "LatexMk" (concat command files) files)
+        (dolist (file files)
+      (TeX-run-format "LatexMk" (concat command file) file)))
+    (message "No file found, whoops.")))
+
+(defun thomas/find-tex-file ()
+  "Find the correct TeX file(s)."
+  (let* ((fname (buffer-file-name))
+         (ext (file-name-extension fname))
+         (potential-main  (f-join (f-slash (f-parent fname)) (concat (f-base fname) ".tex")))
+         (alltex (f-entries (f-parent fname) (lambda (f) (f-ext-p f "tex"))))
+    (correct-file
+     (cond ((string= ext "tex")
+           fname)
+           ((seq-contains-p '("bib" "cls" "sty") ext)
+            (if (f-exists-p potential-main)
+                potential
+              alltex))
+           (t nil))))
+    correct-file)))
+#+end_src
+
+#+begin_src emacs-lisp :tangle yes
+(map! :map 'doom-leader-regular-map
+      :desc "LatexMk dwim" "l" #'latex-dwim)
+#+end_src
+#+RESULTS:
+: thomas/find-tex-file
+
+* Project management
+** Treemacs
+Pretty useful, and looks cool. I almost always want it on, so let's just add a hook for that.
+
+#+begin_src emacs-lisp :tangle yes
+(add-hook! 'after-init-hook #'treemacs)
+#+end_src
+
+Get rid of that fugly divider
+#+begin_src emacs-lisp :tangle yes
+(after! treemacs
+(add-hook! 'treemacs-mode-hook (setq window-divider-mode -1
+                                     variable-pitch-mode 1
+                                     treemacs-follow-mode 1))
+)
+#+end_src
 * Programming
+** Regex
+
+Emacs regex sucks. Luckily, there are packages which make this much better, including making changes visual.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package! visual-regexp
+  :config
+        (map! :map 'doom-leader-regular-map
+              (:prefix ("v" . "visual regex")
+               :desc "Replace regexp" "r"#'vr/replace)))
+
+(use-package! visual-regexp-steroids
+  :after 'visual-regexp)
+#+end_src
 ** Docs
 #+begin_src emacs-lisp :tangle yes
 (use-package! devdocs
@@ -2277,6 +2353,8 @@ The future is here.
 
 (use-package! eva
 :init
+(setq ess-history-file "~/OneDrive/self/data/.Rhistory")
+(setq ess-ask-for-ess-directory nil)
   (setq eva-ai-name "Ea"
         eva-user-name "Thomas"
         eva-user-birthday "2021-07-16"
@@ -2287,8 +2365,10 @@ The future is here.
   (setq eva-buffer-focus-log-path "~/OneDrive/self/data/buffer-focus.tsv")
   (setq eva-buffer-info-path      "~/OneDrive/self/data/buffer-info.tsv")
   (setq eva-main-ledger-path      "~OneDrive/self/journal/finances/l.ledger")
-  (setq eva-main-datetree-path    "~/OneDrive/self/journal/diary.org")
+  (setq eva-main-datetree-path    "~/OneDrive/org-roam/diary.org")
   :config
+  (setq org-journal-dir "~/OneDrive/org-roam/journal")
+    (setq org-journal-file-format "%F.org")
     (require 'eva-builtin)
   (require 'eva-activity)
     (add-hook 'eva-after-load-vars-hook #'eva-check-dangling-clock)
@@ -2363,6 +2443,9 @@ The future is here.
                                    :cost-false-pos 5
                                    :cost-false-neg 5)
 
+              (eva-activity-create :name "working"
+                                   :cost-false-pos 5
+                                   :cost-false-neg 5)
               (eva-activity-create :name "unknown"
                                    :cost-false-pos 0
                                    :cost-false-neg 0)))
@@ -2423,9 +2506,8 @@ Colors in the info box, jeej.
 
 I just map everything to SPC-r because doom is not using it and r stands for roam.
 #+begin_src elisp :tangle yes
-(map! :leader (:prefix "r" (:prefix "r" nil)))
 (map! :leader
-      (:prefix ("r" . "roam")
+      (:prefix-map ("r" . "regular")
        :desc "find file"            "f"   #'org-roam-node-find
        :desc "find ref"             "F"   #'org-roam-ref-find
        :desc "center scroll"        "s"   #'prot/scroll-center-cursor-mode
@@ -2443,7 +2525,7 @@ I just map everything to SPC-r because doom is not using it and r stands for roa
        :desc "thesaurus this word"  "w"  #'powerthesaurus-lookup-word-at-point
        :desc "thesaurus lookup word" "W"   #'powerthesaurus-lookup-word
        :desc "outline"              "o"   #'org-ol-tree
-       (:prefix  ("R" . "orui")
+       (:prefix  ("r" . "orui")
                 :desc "orui-mode" "r" #'org-roam-ui-mode
                 :desc "zoom" "z" #'orui-node-zoom
                 :desc "open" "o" #'orui-open
@@ -2469,6 +2551,31 @@ I just map everything to SPC-r because doom is not using it and r stands for roa
       )
 #+end_src
 
+#+RESULTS:
+: org-gtd-show-stuck-projects
+
+** Window movement
+The default window movement keys are super cumbersome, here are some better defaults.
+
+#+begin_src emacs-lisp :tangle yes
+(map! "C-w" nil)
+(global-set-key  (kbd "C-<tab>") #'evil-window-next)
+ (global-set-key             (kbd "C-<iso-lefttab>") #'evil-window-prev)
+     (global-set-key   (kbd "C-w") #'ace-window)
+
+(map!
+    :nvig "C-<iso-lefttab>" #'evil-window-prev
+      :nvig  "C-w" #'ace-window)
+(map! :nvig "C-<tab>" #'evil-window-next)
+#+end_src
+
+** Selection
+Wow, I wish I knew this was a thing before
+
+#+begin_src emacs-lisp :tangle yes
+(map!  :nvig "C-'" #'er/expand-region)
+#+end_src
+
 ** Workman
 
    I use the Workman keyboard layout, this package sets most of the evil shortcuts to more sensible positions. I still need to add some more specific shortcuts, for instance for moving windows.
@@ -2476,6 +2583,12 @@ I just map everything to SPC-r because doom is not using it and r stands for roa
 (evil-workman-global-mode t)
  #+end_src
 
+#+begin_src emacs-lisp :tangle no
+(evil-define-key '(normal)
+    "n"         'evil-next-visual-line
+    "e"         'evil-previous-visual-line
+    )
+#+end_src
 This does not fix the window bindings, so we have to do that manually
 
 #+begin_src emacs-lisp :tangle yes
@@ -2528,8 +2641,7 @@ This does not apply them to org-mode, which uses evil-org.el, but those are easi
 (after! org (set-evil-keybindings))
 
 ;; JUST TO BE REALLY FUCKING SURE
-(add-hook! 'org-mode-hook #'set-evil-keybindings)
-
+(add-hook 'org-mode-hook #'set-evil-keybindings 99)
 (defun iscroll-mode-keybinds ()
   (when (eq iscroll-mode t)
       (evil-define-key 'normal evil-org-mode-map
@@ -2622,3 +2734,8 @@ Add .mdx support
 *** Iscroll
 
     Works, but "forward-line" is very slow compared to "evil-next-visual-line", should make that compatible with both.
+* Server
+Emacs daemon gives me nothing but headaches. This is not ideal, but it at least works.
+#+begin_src emacs-lisp :tangle yes
+(server-start)
+#+end_src

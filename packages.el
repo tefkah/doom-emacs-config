@@ -65,7 +65,7 @@
 ;           :files ("*")
 ;           :build (:not compile)))
 
-(package! org-roam-server)
+;(package! org-roam-server)
 (package! ivy-bibtex)
 (package! org-ref)
 (package! org-roam-bibtex)
@@ -80,13 +80,12 @@
                                     ))
 (package! org-marginalia :recipe (:host github :repo "nobiot/org-marginalia"))
 
-(package! nroam)
+;(package! nroam)
 (package! org-fragtog)
 (package! org-appear :recipe (:host github :repo "awth13/org-appear"))
 (package! org-noter-pdftools)
 (package! org-pdftools)
-;(package! olivetti)
-(package! olivetti :recipe (:local-repo "~/Projects/emacs/olivetti"))
+(package! olivetti)
 (package! binder)
 
 (package! focus)
@@ -161,3 +160,6 @@
            :files (:defaults "assets" "renv" "*.R" "*.gnuplot")))
 
 (package! ivy-posframe)
+
+
+(package! nano-theme :recipe (:host github :repo "rougier/nano-theme"))
