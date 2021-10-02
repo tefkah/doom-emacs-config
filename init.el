@@ -22,7 +22,8 @@
        company           ; the ultimate code completion backend
        ;;helm              ; the *other* search engine for love and life
        ;;ido               ; the other *other* search engine...
-       (ivy +icons +fuzzy)               ; a search engine for love and life
+       (ivy +icons +fuzzy +posframe)               ; a search engine for love and life
+     ; (vertico +icons)
 
        :ui
        deft              ; notational velocity for Emacs
@@ -137,7 +138,7 @@
        (javascript +lsp)        ; all(hope(abandon(ye(who(enter(here))))))
        ;;julia             ; a better, faster MATLAB
        ;;kotlin            ; a better, slicker Java(Script)
-       (latex +lsp +fold +latexmk)             ; writing papers in Emacs has never been so fun
+       (latex +lsp +fold) ; writing papers in Emacs has never been so fun
        ;;lean
        ;;factor
        ;;ledger            ; an accounting system in Emacs

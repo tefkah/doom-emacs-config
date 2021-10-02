@@ -64,77 +64,34 @@
   :config
   (setq mixed-pitch-face 'variable-pitch))
 
-(setq doom-font (font-spec :family "Iosevka SS05" :size 15 :weight 'light)
-       doom-variable-pitch-font (font-spec :family "Roboto" :style "Regular" :size 18 :weight 'regular))
+(setq doom-font (font-spec :family "FiraCode Nerd Font" :size 15 :weight 'light)
+       doom-variable-pitch-font (font-spec :family "Roboto" :style "Regular" :size 12 :weight 'regular))
 
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You an either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
 
 (after! doom-modeline
+  (setq doom-modeline-enable-word-count t
+        doom-modeline-header-line nil
+        ;doom-modeline-hud nil
+        doom-themes-padded-modeline t
+        doom-flatwhite-brighter-modeline nil
+        doom-plain-brighter-modeline nil))
+(add-hook! 'doom-modeline-mode-hook
+           (progn
+  (set-face-attribute 'header-line nil
+                      :background (face-background 'mode-line)
+                      :foreground (face-foreground 'mode-line))
+  ))
+
+(after! doom-modeline
   (doom-modeline-def-modeline 'main
     '(bar matches buffer-info vcs word-count)
     '(buffer-position misc-info major-mode)))
 
-(setq blink-cursor-alist '((box . box)))
-(setq blinking-cursor-mode 1)
-
-(defvar ivy-posframewidth 120)
-(setq ivy-posframe-width
-  (round (* 0.6 (frame-width))))
-
-;; Please just keep the width fixed
-(defun set-ivy-posframe-width ()
-  (progn
-(setq ivy-posframe-width
-  (round (* 0.6 (frame-width))))
-(setq      ivy-posframe-parameters
-        `((min-width . 90)
-          (width . ,ivy-posframe-width)
-          (height . ,ivy-height)
-          ))))
-
-(defun posframe-poshandler-frame-top-center-margin (info)
-  "Posframe's position handler.
-Get a position which let posframe stay onto its
-parent-frame's top center.  The structure of INFO can
-be found in docstring of `posframe-show'."
-  (cons (/ (- (plist-get info :parent-frame-width)
-              (plist-get info :posframe-width))
-           2)
-        100))
-
-(defun thomas/ivy-posframe-display-at-frame-top-center (str)
-  (ivy-posframe--display str #'posframe-poshandler-frame-top-center-margin))
-
-
-(use-package! ivy-posframe
-  :hook (ivy-mode . ivy-posframe-mode)
-  :config
-  (add-hook! 'ivy-posframe-hook #'set-ivy-posframe-width)
-  (setq ivy-fixed-height-minibuffer nil
-        ivy-posframe-display-functions-alist '((t . thomas/ivy-posframe-display-at-frame-top-center))
-        ivy-posframe-border-width 2
-        ivy-posframe-parameters
-        `((min-width . 90)
-          (width . ,ivy-posframe-width)
-          (min-height . ,ivy-height)
-          (height . ,ivy-height)
-          ))
-
-  ;; default to posframe display function
-  ;(setf (alist-get t ivy-posframe-display-functions-alist)
-  ;      #'+ivy-display-at-frame-center-near-bottom-fn)
-
-
-  ;; posframe doesn't work well with async sources (the posframe will
-  ;; occasionally stop responding/redrawing), and causes violent resizing of the
-  ;; posframe.
-  (dolist (fn '(swiper counsel-rg counsel-grep counsel-git-grep))
-    (setf (alist-get fn ivy-posframe-display-functions-alist)
-          #'ivy-display-function-fallback))
-
-  (add-hook 'doom-after-reload-hook #'posframe-delete-all))
+(after! centaur-tabs
+  (setq centaur-tabs-style "wave"))
 
 (use-package! org-fragtog
   :after org
@@ -168,6 +125,19 @@ be found in docstring of `posframe-show'."
               #'org-roam-unlinked-references-insert-section))
   (org-roam-setup))
 
+(defun org-roam-buffer-setup ()
+  "Function to make org-roam-buffer more pretty."
+  (progn
+    (setq-local olivetti-body-width 44)
+    (variable-pitch-mode 1)
+    (olivetti-mode 1)
+    (centaur-tabs-local-mode -1)
+
+  (set-face-background 'magit-section-highlight (face-background 'default))))
+
+(after! org-roam
+(add-hook! 'org-roam-mode-hook #'org-roam-buffer-setup))
+
 (use-package! org-roam-ui
   :after org-roam
   :config
@@ -194,7 +164,12 @@ be found in docstring of `posframe-show'."
 \n* ${title}\n\n
 \n* Summary
 \n\n\n* Rough note space\n")
-           :unnarrowed t))))
+           :unnarrowed t)
+          ("p" "person" plain "%?"
+           :if-new
+           (file+head "${slug}.org" "%^{relation|some guy|family|friend|colleague}p %^{birthday}p %^{address}p
+#+title:${slug}\n#+filetags: :person: \n"
+                      :unnarrowed t)))))
 
 (use-package! org-ref
     ;:after org-roam
@@ -202,17 +177,17 @@ be found in docstring of `posframe-show'."
     (setq
          org-ref-completion-library 'org-ref-ivy-cite
          org-ref-get-pdf-filename-function 'org-ref-get-pdf-filename-helm-bibtex
-         org-ref-default-bibliography (list "/home/thomas/OneDrive/org-roam/bib/Library.bib")
-         org-ref-bibliography-notes "/home/thomas/OneDrive/org-roam/bibnotes.org"
+         org-ref-default-bibliography (list "/Users/thomas/OneDrive/org-roam/bib/Library.bib")
+         org-ref-bibliography-notes "/Users/thomas/OneDrive/org-roam/bibnotes.org"
          org-ref-note-title-format "* %y - %t\n :PROPERTIES:\n  :Custom_ID: %k\n  :NOTER_DOCUMENT: %F\n :ROAM_KEY: cite:%k\n  :AUTHOR: %9a\n  :JOURNAL: %j\n  :YEAR: %y\n  :VOLUME: %v\n  :PAGES: %p\n  :DOI: %D\n  :URL: %U\n :END:\n\n"
-         org-ref-notes-directory "/home/thomas/OneDrive/org-roam/"
+         org-ref-notes-directory "/Users/thomas/OneDrive/org-roam/"
          org-ref-notes-function 'orb-edit-notes
     ))
 
 (after! org-ref
 (setq
- bibtex-completion-notes-path "/home/thomas/OneDrive/org-roam/"
- bibtex-completion-bibliography "/home/thomas/OneDrive/org-roam/bib/Library.bib"
+ bibtex-completion-notes-path "/Users/thomas/OneDrive/org-roam/"
+ bibtex-completion-bibliography "/Users/thomas/OneDrive/org-roam/bib/Library.bib"
  bibtex-completion-pdf-field "file"
  bibtex-completion-notes-template-multiple-files
  (concat
@@ -266,7 +241,7 @@ be found in docstring of `posframe-show'."
 
 (add-hook! 'org-mode-hook #'org-mode-remove-stars)
 
-;; hide title / author ... keywords
+  ;; hide title / author ... keywords
 
 ;;; Ugly org hooks
 (defun nicer-org ()
@@ -276,15 +251,48 @@ be found in docstring of `posframe-show'."
   (hl-line-mode -1)
   (display-line-numbers-mode -1)
   (olivetti-mode 1)
-  (org-num-mode 1)
+  ;(org-num-mode 1)
   (org-superstar-mode -1)
-  ;(org-indent-mode -1)
+  (org-indent-mode -1)
   ))
 
 (add-hook! 'org-mode-hook  #'nicer-org)
 
+(setq org-preview-latex-process-alist
+  '((dvipng
+     :programs ("/Library/TeX/texbin/latex" "/Library/TeX/texbin/dvipng")
+     :description "dvi > png"
+     :message "you need to install the programs: latex and dvipng."
+     :image-input-type "dvi"
+     :image-output-type "png"
+     :image-size-adjust (1.0 . 1.0)
+     :latex-compiler ("/Library/TeX/texbin/latex -interaction nonstopmode -output-directory %o %f")
+     :image-converter ("/Library/TeX/texbin/dvipng -D %D -T tight -bg Transparent -o %O %f"))
+    (dvisvgm
+     :programs ("/Library/TeX/texbin/latex" "/Library/TeX/texbin/dvisvgm")
+     :description "dvi > svg"
+     :message "you need to install the programs: latex and dvisvgm."
+     :image-input-type "dvi"
+     :image-output-type "svg"
+     :image-size-adjust (1.7 . 1.5)
+     :latex-compiler ("/Library/TeX/texbin/latex -interaction nonstopmode -output-directory %o %f")
+     :image-converter ("/Library/TeX/texbin/dvisvgm %f -n -b min -c %S -o %O"))
+    (imagemagick
+     :programs ("latex" "convert")
+     :description "pdf > png"
+     :message "you need to install the programs: latex and imagemagick."
+     :image-input-type "pdf"
+     :image-output-type "png"
+     :image-size-adjust (1.0 . 1.0)
+     :latex-compiler ("pdflatex -interaction nonstopmode -output-directory %o %f")
+     :image-converter
+     ("convert -density %D -trim -antialias %f -quality 100 %O"))))
+
 (after! org
   (setq org-startup-with-latex-preview 1 ;always preview latex
+        org-latex-create-formula-image-program 'dvipng
+        LaTeX-command "/Library/TeX/texbin/latex"
+        latex-run-command "/Library/TeX/texbin/latex"
         org-startup-with-inline-images 1 ;always preview images
         ;org-hide-leading-stars 1
         org-startup-indented nil         ; don't indent
@@ -293,7 +301,9 @@ be found in docstring of `posframe-show'."
         org-pretty-entities 1            ; show unicode characters
         org-num-max-level 3              ; no 1.1.1.2
         org-indirect-buffer-display 'other-window
-        ))
+        line-spacing 3 ; let me B R E A T H E
+        )
+  (setenv "PATH" (concat (getenv "PATH") ":/Library/TeX/texbin")))
 
 (defun +org-tree-to-indirect-buffer-options (option)
     (let* ((old-value org-indirect-buffer-display))
@@ -330,7 +340,7 @@ be found in docstring of `posframe-show'."
     '(org-level-3 :height 1.1 :weight regular :slant normal)
     ;'(org-document-info  :inherit 'nano-face-faded)
     '(org-document-title   ;:foreground ,(doom-color 'black)
-                           :family "Roboto Slab"
+                           :family "Roboto"
                            :height 250
                            :weight medium)))
 
@@ -343,7 +353,7 @@ be found in docstring of `posframe-show'."
           ("~" code)
           ("+" (:strike-through t)))))
 
-(after! org
+        (after! org
 (setq org-ellipsis " ▾ ")
   (appendq! +ligatures-extra-symbols
           `(:checkbox      "☐"
@@ -474,7 +484,7 @@ be found in docstring of `posframe-show'."
                                  "* %?\n%U\n\n  %i\n  %a"
                                  :kill-buffer t)
                                 ("m" "Meeting"
-                                 entry (file+headline "/home/thomas/OneDrive/org-roam/agenda.org" "Future")
+                                 entry (file+headline "/Users/thomas/OneDrive/org-roam/agenda.org" "Future")
                                 ,(concat "* TODO %? :meeting:\n" "<%<%Y-%m-%d %a %H:00>>"))
                                 ("o" "Open Question Thesis"
                                  entry (file+headline "~/OneDrive/org-roam/openquestions.org" "Questions")
@@ -558,7 +568,7 @@ be found in docstring of `posframe-show'."
 	       '(min-height . 1)  '(height     . 45)
 	       '(min-width  . 1) '(width      . 81)
                '(vertical-scroll-bars . nil)
-               '(internal-border-width . 40)
+               '(internal-border-width . 30)
                '(left-fringe    . 0)
                '(right-fringe   . 0)
                '(tool-bar-lines . 0)
@@ -779,7 +789,7 @@ Imitates the look of wordprocessors a bit."
         (display-line-numbers-mode -1))
     (display-line-numbers-mode 1)))
 
-;;;;;;;;
+                ;;;;;;;;
 ;;
 ;; org-latex-export
 ;;
@@ -933,7 +943,7 @@ Otherwise compile all the .tex files you find using LaTexMK."
   (setq eva-idle-log-path         "~/OneDrive/self/data/idle.tsv")
   (setq eva-buffer-focus-log-path "~/OneDrive/self/data/buffer-focus.tsv")
   (setq eva-buffer-info-path      "~/OneDrive/self/data/buffer-info.tsv")
-  (setq eva-main-ledger-path      "~OneDrive/self/journal/finances/l.ledger")
+  (setq eva-main-ledger-path      "~/OneDrive/self/journal/finances/l.ledger")
   (setq eva-main-datetree-path    "~/OneDrive/org-roam/diary.org")
   :config
   (setq org-journal-dir "~/OneDrive/org-roam/journal")
@@ -1020,6 +1030,16 @@ Otherwise compile all the .tex files you find using LaTexMK."
                                    :cost-false-neg 0)))
   (eva-mode))
 
+        ;;;;;;;;;;;;;
+;;;
+;;; Other
+;;;
+;;;;;;;;;;;;
+
+(setq vterm-shell "/usr/bin/fish")
+
+(setq evil-escape-key-sequence "qd")
+
 ;(use-package! tree-sitter
 ;  :config
 ;  (require 'tree-sitter-langs)
@@ -1038,6 +1058,50 @@ Otherwise compile all the .tex files you find using LaTexMK."
   :commands (info-colors-fontify-node))
 
 (add-hook 'Info-selection-hook 'info-colors-fontify-node)
+
+(map! :leader
+      (:prefix-map ("r" . "regular")
+       :desc "find file"            "f"   #'org-roam-node-find
+       :desc "find ref"             "F"   #'org-roam-ref-find
+       :desc "center scroll"        "s"   #'prot/scroll-center-cursor-mode
+       :desc "start taking notes"   "S"   #'org-noter
+       :desc "toggle buffer"        "b"   #'org-roam-buffer-toggle
+       :desc "insert note"          "i"   #'org-roam-node-insert
+       :desc "server"               "g"   #'org-roam-server
+       :desc "quit notes"           "q"   #'org-noter-kill-session
+       :desc "tag (roam)"           "t"   #'org-roam-tag-add
+       :desc "tag (org)"            "T"   #'org-set-tags-command
+       :desc "pomodoro"             "p"   #'org-pomodoro
+       :desc "change nano-theme"    "n"   #'nano-toggle-theme
+       :desc "rebuid db"            "d"   #'org-roam-db-build-cache
+       :desc "cite"                 "c"   #'helm-bibtex
+       :desc "thesaurus this word"  "w"  #'powerthesaurus-lookup-word-at-point
+       :desc "thesaurus lookup word" "W"   #'powerthesaurus-lookup-word
+       :desc "outline"              "o"   #'org-ol-tree
+       (:prefix  ("r" . "orui")
+                :desc "orui-mode" "r" #'org-roam-ui-mode
+                :desc "zoom" "z" #'orui-node-zoom
+                :desc "open" "o" #'orui-open
+                :desc "local" "l" #'orui-node-local
+                :desc "sync theme" "t" #'orui-sync-theme
+                :desc "follow" "f" #'orui-follow-mode)
+       (:prefix ("m" . "transclusion")
+                :desc "make link"            "m"   #'org-transclusion-make-from-link
+                :desc "transclusion mode"    "t"   #'org-transclusion-mode
+                :desc "add at point"         "a"   #'org-transclusion-add-at-point
+                :desc "add all in buffer"    "A"   #'org-transclusion-add-all-in-buffer
+                :desc "remove at point"      "r"   #'org-transclusion-remove-at-point
+                :desc "remove all in buffer" "R"   #'org-transclusion-remove-all-in-buffer
+                :desc "start live edit"      "s"   #'org-transclusion-live-sync-start-at-point
+                :desc "stop live edit"       "S"   #'org-transclusion-live-sync-exit-at-point)
+       )
+      (:prefix ("d" . "GTD")
+       :desc  "process inbox" "p"#'org-gtd-process-inbox
+       :desc  "agenda list" "a"#'org-agenda-list
+       :desc  "capture" "c"#'org-gtd-capture
+       :desc  "show next" "n" #'org-gtd-show-all-next
+       :desc  "show stuck project" "s" #'org-gtd-show-stuck-projects)
+      )
 
 (map! "C-w" nil)
 (global-set-key  (kbd "C-<tab>") #'evil-window-next)
@@ -1125,71 +1189,3 @@ Otherwise compile all the .tex files you find using LaTexMK."
   (org-clear-latex-preview))
 
 (server-start)
-
-(after! doom-modeline
-  (setq doom-modeline-enable-word-count t
-        doom-modeline-header-line nil
-        ;doom-modeline-hud nil
-        doom-themes-padded-modeline t
-        doom-flatwhite-brighter-modeline nil
-        doom-plain-brighter-modeline nil))
-(add-hook! 'doom-modeline-mode-hook
-           (progn
-  (set-face-attribute 'header-line nil
-                      :background (face-background 'mode-line)
-                      :foreground (face-foreground 'mode-line))
-  ))
-
-;;;;;;;;;;;;;
-;;;
-;;; Other
-;;;
-;;;;;;;;;;;;
-
-(setq vterm-shell "/usr/bin/fish")
-
-(setq evil-escape-key-sequence "qd")
-
-(map! :leader
-      (:prefix-map ("r" . "regular")
-       :desc "find file"            "f"   #'org-roam-node-find
-       :desc "find ref"             "F"   #'org-roam-ref-find
-       :desc "center scroll"        "s"   #'prot/scroll-center-cursor-mode
-       :desc "start taking notes"   "S"   #'org-noter
-       :desc "toggle buffer"        "b"   #'org-roam-buffer-toggle
-       :desc "insert note"          "i"   #'org-roam-node-insert
-       :desc "server"               "g"   #'org-roam-server
-       :desc "quit notes"           "q"   #'org-noter-kill-session
-       :desc "tag (roam)"           "t"   #'org-roam-tag-add
-       :desc "tag (org)"            "T"   #'org-set-tags-command
-       :desc "pomodoro"             "p"   #'org-pomodoro
-       :desc "change nano-theme"    "n"   #'nano-toggle-theme
-       :desc "rebuid db"            "d"   #'org-roam-db-build-cache
-       :desc "cite"                 "c"   #'helm-bibtex
-       :desc "thesaurus this word"  "w"  #'powerthesaurus-lookup-word-at-point
-       :desc "thesaurus lookup word" "W"   #'powerthesaurus-lookup-word
-       :desc "outline"              "o"   #'org-ol-tree
-       (:prefix  ("r" . "orui")
-                :desc "orui-mode" "r" #'org-roam-ui-mode
-                :desc "zoom" "z" #'orui-node-zoom
-                :desc "open" "o" #'orui-open
-                :desc "local" "l" #'orui-node-local
-                :desc "sync theme" "t" #'orui-sync-theme
-                :desc "follow" "f" #'orui-follow-mode)
-       (:prefix ("m" . "transclusion")
-                :desc "make link"            "m"   #'org-transclusion-make-from-link
-                :desc "transclusion mode"    "t"   #'org-transclusion-mode
-                :desc "add at point"         "a"   #'org-transclusion-add-at-point
-                :desc "add all in buffer"    "A"   #'org-transclusion-add-all-in-buffer
-                :desc "remove at point"      "r"   #'org-transclusion-remove-at-point
-                :desc "remove all in buffer" "R"   #'org-transclusion-remove-all-in-buffer
-                :desc "start live edit"      "s"   #'org-transclusion-live-sync-start-at-point
-                :desc "stop live edit"       "S"   #'org-transclusion-live-sync-exit-at-point)
-       )
-      (:prefix ("d" . "GTD")
-       :desc  "process inbox" "p"#'org-gtd-process-inbox
-       :desc  "agenda list" "a"#'org-agenda-list
-       :desc  "capture" "c"#'org-gtd-capture
-       :desc  "show next" "n" #'org-gtd-show-all-next
-       :desc  "show stuck project" "s" #'org-gtd-show-stuck-projects)
-      )

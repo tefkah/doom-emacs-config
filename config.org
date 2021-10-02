@@ -146,8 +146,8 @@ It's nice to have both mono and proportional fonts in org-mode, but mostly propo
 
 There's not a lot of good fonts I've noticed. Fira code is the one I keep coming back to.
 #+begin_src emacs-lisp :tangle yes
-(setq doom-font (font-spec :family "Iosevka SS05" :size 15 :weight 'light)
-       doom-variable-pitch-font (font-spec :family "Roboto" :style "Regular" :size 18 :weight 'regular))
+(setq doom-font (font-spec :family "FiraCode Nerd Font" :size 15 :weight 'light)
+       doom-variable-pitch-font (font-spec :family "Roboto" :style "Regular" :size 12 :weight 'regular))
 
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You an either set `doom-theme' or manually load a theme with the
@@ -338,220 +338,19 @@ Trying to make my own thing work
         dashboard-week-agenda t
         ))
    #+end_src
-** Cursor
-#+begin_src emacs-lisp :tangle no
-;(after! org
-;  (require 'pulse-cursor))
-;
-;(add-hook! 'org-mode-hook (pulse-cursor-mode))
 
+** Centaur tabs
 
-(require 'pulse)
-
-(defface pulse-cursor-overlay-face1
-  '((((class color) (background light))
-     :background (face-background 'default))
-    (((class color) (background dark))
-     :background (face-background 'default)))
-  "")
-
-(defvar pulse-cursor-idle-timer nil
-  "Timer started after `pulse-cursor-delay' seconds of Emacs idle time.
-The function `pulse-cursor-start' is called when the timer fires.")
-
-(defvar pulse-cursor-timer nil
-  "Timer started from `pulse-cursor-start'.
-This timer calls `pulse-cursor-timer-function' every
-`pulse-cursor-interval' seconds.")
-
-(defgroup pulse-cursor nil
-  "Displaying text cursors."
-  :version "21.1"
-  :group 'frames)
-
-(defcustom pulse-cursor-delay 0.5
-  "Seconds of idle time before the first blink of the cursor.
-Values smaller than 0.2 sec are treated as 0.2 sec."
-  :type 'number
-  :group 'pulse-cursor
-  :set (lambda (symbol value)
-         (set-default symbol value)
-         (when pulse-cursor-idle-timer (pulse-cursor--start-idle-timer))))
-
-(defcustom pulse-cursor-interval 0.5
-  "Length of cursor blink interval in seconds."
-  :type 'number
-  :group 'pulse-cursor
-  :set (lambda (symbol value)
-         (set-default symbol value)
-         (when pulse-cursor-timer (pulse-cursor--start-timer))))
-
-(defcustom pulse-cursor-blinks 10
-  "How many times to blink before using a solid cursor on NS, X, and MS-Windows.
-Use 0 or negative value to blink forever."
-  :version "24.4"
-  :type 'integer
-  :group 'pulse-cursor)
-
-(defvar pulse-cursor-blinks-done 1
-  "Number of blinks done since we started blinking on NS, X, and MS-Windows.")
-
-(defun pulse-cursor--start-idle-timer ()
-  "Start the `pulse-cursor-idle-timer'."
-  (when pulse-cursor-idle-timer (cancel-timer pulse-cursor-idle-timer))
-  (setq pulse-cursor-idle-timer
-        ;; The 0.2 sec limitation from below is to avoid erratic
-        ;; behavior (or downright failure to display the cursor
-        ;; during command execution) if they set pulse-cursor-delay
-        ;; to a very small or even zero value.
-        (run-with-idle-timer (max 0.2 pulse-cursor-delay)
-                             :repeat #'pulse-cursor-start)))
-
-(defun pulse-cursor--start-timer ()
-  "Start the `pulse-cursor-timer'."
-  (when pulse-cursor-timer (cancel-timer pulse-cursor-timer))
-  (setq pulse-cursor-timer
-        (run-with-timer pulse-cursor-interval pulse-cursor-interval
-                        #'pulse-cursor-timer-function)))
-
-(defun pulse-cursor-start ()
-  "Timer function called from the timer `pulse-cursor-idle-timer'.
-This starts the timer `pulse-cursor-timer', which makes the cursor blink
-if appropriate.  It also arranges to cancel that timer when the next
-command starts, by installing a pre-command hook."
-  (when (null pulse-cursor-timer)
-    ;; Set up the timer first, so that if this signals an error,
-    ;; pulse-cursor-end is not added to pre-command-hook.
-    (setq pulse-cursor-blinks-done 1)
-    (pulse-cursor--start-timer)
-    (add-hook 'pre-command-hook 'pulse-cursor-end)
-    (internal-show-cursor nil nil)
-    ))
-
-(defun pulse-cursor-timer-function ()
-  "Timer function of timer `pulse-cursor-timer'."
-
-  (internal-show-cursor nil (not (internal-show-cursor-p)))
-
-  (pulse-momentary-highlight-region (point) (+ 1 (point)) 'pulse-cursor-overlay-face1)
-  ;;(pulse-momentary-highlight-region (point-min) (point-max))
-
-  ;; Suspend counting blinks when the w32 menu-bar menu is displayed,
-  ;; since otherwise menu tooltips will behave erratically.
-  (or (and (fboundp 'w32--menu-bar-in-use)
-	   (w32--menu-bar-in-use))
-      (setq pulse-cursor-blinks-done (1+ pulse-cursor-blinks-done)))
-  ;; Each blink is two calls to this function.
-  (when (and (> pulse-cursor-blinks 0)
-             (<= (* 2 pulse-cursor-blinks) pulse-cursor-blinks-done))
-    (pulse-cursor-suspend)
-    (add-hook 'post-command-hook 'pulse-cursor-check)))
-
-(defun pulse-cursor-end ()
-  "Stop cursor blinking.
-This is installed as a pre-command hook by `pulse-cursor-start'.
-When run, it cancels the timer `pulse-cursor-timer' and removes
-itself as a pre-command hook."
-  (remove-hook 'pre-command-hook 'pulse-cursor-end)
-
-  (internal-show-cursor nil t)
-
-  (when pulse-cursor-timer
-    (cancel-timer pulse-cursor-timer)
-    (setq pulse-cursor-timer nil)))
-
-(defun pulse-cursor-suspend ()
-  "Suspend cursor blinking.
-This is called when no frame has focus and timers can be suspended.
-Timers are restarted by `pulse-cursor-check', which is called when a
-frame receives focus."
-  (pulse-cursor-end)
-  (when pulse-cursor-idle-timer
-    (cancel-timer pulse-cursor-idle-timer)
-    (setq pulse-cursor-idle-timer nil)))
-
-(defun pulse-cursor--should-blink ()
-  "Determine whether we should be blinking.
-Returns whether we have any focused non-TTY frame."
-  (and pulse-cursor-mode
-       (let ((frame-list (frame-list))
-             (any-graphical-focused nil))
-         (while frame-list
-           (let ((frame (pop frame-list)))
-             (when (and (display-graphic-p frame) (frame-focus-state frame))
-               (setf any-graphical-focused t)
-               (setf frame-list nil))))
-         any-graphical-focused)))
-
-(defun pulse-cursor-check ()
-  "Check if cursor blinking shall be restarted.
-This is done when a frame gets focus.  Blink timers may be
-stopped by `pulse-cursor-suspend'.  Internally calls
-`pulse-cursor--should-blink' and returns its result."
-  (let ((should-blink (pulse-cursor--should-blink)))
-    (when (and should-blink (not pulse-cursor-idle-timer))
-      (remove-hook 'post-command-hook 'pulse-cursor-check)
-      (pulse-cursor--start-idle-timer))
-    should-blink))
-
-(defun pulse-cursor--rescan-frames (&optional _ign)
-  "Called when the set of focused frames changes or when we delete a frame."
-  (unless (pulse-cursor-check)
-    (pulse-cursor-suspend)))
-
-(define-minor-mode pulse-cursor-mode
-  "Toggle cursor blinking (Blink Cursor mode).
-If the value of `pulse-cursor-blinks' is positive (10 by default),
-the cursor stops blinking after that number of blinks, if Emacs
-gets no input during that time.
-See also `pulse-cursor-interval' and `pulse-cursor-delay'.
-This command is effective only on graphical frames.  On text-only
-terminals, cursor blinking is controlled by the terminal."
-  :init-value  (not (or noninteractive
-		       no-blinking-cursor
-		       (eq system-type 'ms-dos)
-		       (not (display-blink-cursor-p))))
-  ;:initialize 'custom-initialize-delay
-  :group 'pulse-cursor
-  :global t
-  (pulse-cursor-suspend)
-  (remove-hook 'after-delete-frame-functions #'pulse-cursor--rescan-frames)
-  (remove-function after-focus-change-function #'pulse-cursor--rescan-frames)
-  (when pulse-cursor-mode
-    (add-function :after after-focus-change-function #'pulse-cursor--rescan-frames)
-    (add-hook 'after-delete-frame-functions #'pulse-cursor--rescan-frames)
-    (pulse-cursor--start-idle-timer)))
-
-(setq blink-cursor-alist '((box . nil)))
-(setq pulse-cursor-interval 0.5)
-(setq pulse-cursor-blinks 0)
-(setq pulse-delay 0.015)
-(setq pulse-iterations 20)
-;(pulse-cursor-mode +1)
-(when nil
-  (pulse-cursor-mode +1)
-  (pulse-cursor-mode -1)
-  (blink-cursor-mode +1)
-  (blink-cursor-mode -1)
-
-  (internal-show-cursor nil t)
-  (internal-show-cursor nil nil)
-
-  (blink-cursor-mode +1)
-  (setq blink-cursor-alist '((box . hollow)))
-  (setq blink-cursor-interval 0.25)
-  (setq blink-cursor-blinks 0)
-  )
-#+end_src
-
+Love me some tabs, but the doom defaults could be better.
 #+begin_src emacs-lisp :tangle yes
-(setq blink-cursor-alist '((box . box)))
-(setq blinking-cursor-mode 1)
+(after! centaur-tabs
+  (setq centaur-tabs-style "wave"))
 #+end_src
+
 ** Ivy
 The Doom defaults are nice, but I really dislike that  the size of the posframe keeps changing.
 Also I want it to be on top and with some margin, which requires some extra config
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp :tangle no
 (defvar ivy-posframewidth 120)
 (setq ivy-posframe-width
   (round (* 0.6 (frame-width))))
@@ -666,6 +465,22 @@ Fantastic package which allows you to backlink etc.
               #'org-roam-unlinked-references-insert-section))
   (org-roam-setup))
  #+end_src
+
+*** Hotter Buffer
+#+begin_src emacs-lisp :tangle yes
+(defun org-roam-buffer-setup ()
+  "Function to make org-roam-buffer more pretty."
+  (progn
+    (setq-local olivetti-body-width 44)
+    (variable-pitch-mode 1)
+    (olivetti-mode 1)
+    (centaur-tabs-local-mode -1)
+
+  (set-face-background 'magit-section-highlight (face-background 'default))))
+
+(after! org-roam
+(add-hook! 'org-roam-mode-hook #'org-roam-buffer-setup))
+#+end_src
 *** Org-Roam-UI
 My baby
 
@@ -677,84 +492,6 @@ My baby
   (setq org-roam-ui-browser-function #'xwidget-webkit-browse-url))
 #+end_src
 
-*** doom emacs config
-     #+begin_src emacs-lisp :tangle no
-        (defvar +org-roam-open-buffer-on-find-file nil
-  "If non-nil, open the org-roam buffer when opening an org roam file.")
-(use-package! org-roam
-  ;;:hook (org-load . org-roam-mode)
-  :hook (org-roam-backlinks-mode . turn-on-visual-line-mode)
-  :commands (org-roam-buffer-toggle-display
-             org-roam-dailies-find-date
-             org-roam-dailies-find-today
-             org-roam-dailies-find-tomorrow
-             org-roam-dailies-find-yesterday)
-  :preface
-  ;; Set this to nil so we can later detect if the user has set custom values
-  ;; for these variables. If not, default values will be set in the :config
-  ;; section.
-  (defvar org-roam-directory nil)
-  (defvar org-roam-db-location nil)
-  :init
-  (map! :after org
-        :map org-mode-map
-        :localleader
-        :prefix ("m" . "org-roam")
-        "b" #'org-roam-switch-to-buffer
-        "f" #'org-roam-find-file
-        "g" #'org-roam-graph
-        "i" #'org-roam-insert
-        "I" #'org-roam-insert-immediate
-        "m" #'org-roam
-        "t" #'org-roam-tag-add
-        "T" #'org-roam-tag-delete
-        (:prefix ("d" . "by date")
-         :desc "Find previous note" "b" #'org-roam-dailies-find-previous-note
-         :desc "Find date"          "d" #'org-roam-dailies-find-date
-         :desc "Find next note"     "f" #'org-roam-dailies-find-next-note
-         :desc "Find tomorrow"      "m" #'org-roam-dailies-find-tomorrow
-         :desc "Capture today"      "n" #'org-roam-dailies-capture-today
-         :desc "Find today"         "t" #'org-roam-dailies-find-today
-         :desc "Capture Date"       "v" #'org-roam-dailies-capture-date
-         :desc "Find yesterday"     "y" #'org-roam-dailies-find-yesterday
-         :desc "Find directory"     "." #'org-roam-dailies-find-directory))
-  :config
-  (setq org-roam-directory
-        (file-name-as-directory
-         (file-truename
-          (expand-file-name (or org-roam-directory "roam")
-                            org-directory)))
-        org-roam-db-location (or org-roam-db-location
-                                 (concat doom-etc-dir "org-roam.db"))
-        org-roam-verbose nil   ; https://youtu.be/fn4jIlFwuLU
-        ;; Make org-roam buffer sticky; i.e. don't replace it when opening a
-        ;; file with an *-other-window command.
-        org-roam-buffer-window-parameters '((no-delete-other-windows . t))
-        org-roam-completion-everywhere t
-        org-roam-completion-system
-        (cond ((featurep! :completion helm) 'helm)
-              ((featurep! :completion ivy) 'ivy)
-              ((featurep! :completion ido) 'ido)
-              ('default)))
-
-  ;; Normally, the org-roam buffer doesn't open until you explicitly call
-  ;; `org-roam'. If `+org-roam-open-buffer-on-find-file' is non-nil, the
-  ;; org-roam buffer will be opened for you when you use `org-roam-find-file'
-  ;; (but not `find-file', to limit the scope of this behavior).
-  (add-hook! 'find-file-hook
-    (defun +org-roam-open-buffer-maybe-h ()
-      (and +org-roam-open-buffer-on-find-file
-           (memq 'org-roam-buffer--update-maybe post-command-hook)
-           (not (window-parameter nil 'window-side)) ; don't proc for popups
-           (not (eq 'visible (org-roam-buffer--visibility)))
-           (with-current-buffer (window-buffer)
-             (org-roam-buffer--get-create)))))
-
-  ;; Hide the mode line in the org-roam buffer, since it serves no purpose. This
-  ;; makes it easier to distinguish from other org buffers.
-  (add-hook 'org-roam-buffer-prepare-hook #'hide-mode-line-mode))
-
-  #+end_src
 
 *** Org-roam-capture templates
 
@@ -779,7 +516,12 @@ My baby
 \n* ${title}\n\n
 \n* Summary
 \n\n\n* Rough note space\n")
-           :unnarrowed t))))
+           :unnarrowed t)
+          ("p" "person" plain "%?"
+           :if-new
+           (file+head "${slug}.org" "%^{relation|some guy|family|friend|colleague}p %^{birthday}p %^{address}p
+,#+title:${slug}\n#+filetags: :person: \n"
+                      :unnarrowed t)))))
 
 #+end_src
 
@@ -843,17 +585,17 @@ Org-roam server does not really work well with with `smart-parens` for some reas
     (setq
          org-ref-completion-library 'org-ref-ivy-cite
          org-ref-get-pdf-filename-function 'org-ref-get-pdf-filename-helm-bibtex
-         org-ref-default-bibliography (list "/home/thomas/OneDrive/org-roam/bib/Library.bib")
-         org-ref-bibliography-notes "/home/thomas/OneDrive/org-roam/bibnotes.org"
+         org-ref-default-bibliography (list "/Users/thomas/OneDrive/org-roam/bib/Library.bib")
+         org-ref-bibliography-notes "/Users/thomas/OneDrive/org-roam/bibnotes.org"
          org-ref-note-title-format "* %y - %t\n :PROPERTIES:\n  :Custom_ID: %k\n  :NOTER_DOCUMENT: %F\n :ROAM_KEY: cite:%k\n  :AUTHOR: %9a\n  :JOURNAL: %j\n  :YEAR: %y\n  :VOLUME: %v\n  :PAGES: %p\n  :DOI: %D\n  :URL: %U\n :END:\n\n"
-         org-ref-notes-directory "/home/thomas/OneDrive/org-roam/"
+         org-ref-notes-directory "/Users/thomas/OneDrive/org-roam/"
          org-ref-notes-function 'orb-edit-notes
     ))
 
 (after! org-ref
 (setq
- bibtex-completion-notes-path "/home/thomas/OneDrive/org-roam/"
- bibtex-completion-bibliography "/home/thomas/OneDrive/org-roam/bib/Library.bib"
+ bibtex-completion-notes-path "/Users/thomas/OneDrive/org-roam/"
+ bibtex-completion-bibliography "/Users/thomas/OneDrive/org-roam/bib/Library.bib"
  bibtex-completion-pdf-field "file"
  bibtex-completion-notes-template-multiple-files
  (concat
@@ -897,6 +639,7 @@ ORB
    '("citekey" "title" "url" "file" "author-or-editor" "keywords" "pdf" "doi" "author" "tags" "year" "author-bbrev")))
 ;)
 #+end_src
+
 ** To do things with pdfs with
 
    Don't really use this anymore since zotero got a pdf reader
@@ -912,7 +655,7 @@ ORB
    ;; I want to see the whole file
    org-noter-hide-other nil
    ;; Everything is relative to the rclone mega
-   org-noter-notes-search-path "/home/thomas/OneDrive/org-roam"
+   org-noter-notes-search-path "/Users/thomas/OneDrive/org-roam"
    )
   )
 
@@ -989,9 +732,9 @@ No but when I'm writing I don't want org's usual indentation and stars and all t
   (hl-line-mode -1)
   (display-line-numbers-mode -1)
   (olivetti-mode 1)
-  (org-num-mode 1)
+  ;(org-num-mode 1)
   (org-superstar-mode -1)
-  ;(org-indent-mode -1)
+  (org-indent-mode -1)
   ))
 
 (add-hook! 'org-mode-hook  #'nicer-org)
@@ -1000,9 +743,45 @@ No but when I'm writing I don't want org's usual indentation and stars and all t
 
 *** Org variables
 
+fuckin latex
+For some reason it can't find the dang latex executable, so we're just adding the path to it by hand like some sort of caveman
+#+begin_src emacs-lisp :tangle yes
+(setq org-preview-latex-process-alist
+  '((dvipng
+     :programs ("/Library/TeX/texbin/latex" "/Library/TeX/texbin/dvipng")
+     :description "dvi > png"
+     :message "you need to install the programs: latex and dvipng."
+     :image-input-type "dvi"
+     :image-output-type "png"
+     :image-size-adjust (1.0 . 1.0)
+     :latex-compiler ("/Library/TeX/texbin/latex -interaction nonstopmode -output-directory %o %f")
+     :image-converter ("/Library/TeX/texbin/dvipng -D %D -T tight -bg Transparent -o %O %f"))
+    (dvisvgm
+     :programs ("/Library/TeX/texbin/latex" "/Library/TeX/texbin/dvisvgm")
+     :description "dvi > svg"
+     :message "you need to install the programs: latex and dvisvgm."
+     :image-input-type "dvi"
+     :image-output-type "svg"
+     :image-size-adjust (1.7 . 1.5)
+     :latex-compiler ("/Library/TeX/texbin/latex -interaction nonstopmode -output-directory %o %f")
+     :image-converter ("/Library/TeX/texbin/dvisvgm %f -n -b min -c %S -o %O"))
+    (imagemagick
+     :programs ("latex" "convert")
+     :description "pdf > png"
+     :message "you need to install the programs: latex and imagemagick."
+     :image-input-type "pdf"
+     :image-output-type "png"
+     :image-size-adjust (1.0 . 1.0)
+     :latex-compiler ("pdflatex -interaction nonstopmode -output-directory %o %f")
+     :image-converter
+     ("convert -density %D -trim -antialias %f -quality 100 %O"))))
+#+end_src
 #+begin_src emacs-lisp :tangle yes
 (after! org
   (setq org-startup-with-latex-preview 1 ;always preview latex
+        org-latex-create-formula-image-program 'dvipng
+        LaTeX-command "/Library/TeX/texbin/latex"
+        latex-run-command "/Library/TeX/texbin/latex"
         org-startup-with-inline-images 1 ;always preview images
         ;org-hide-leading-stars 1
         org-startup-indented nil         ; don't indent
@@ -1011,7 +790,9 @@ No but when I'm writing I don't want org's usual indentation and stars and all t
         org-pretty-entities 1            ; show unicode characters
         org-num-max-level 3              ; no 1.1.1.2
         org-indirect-buffer-display 'other-window
-        ))
+        line-spacing 3 ; let me B R E A T H E
+        )
+  (setenv "PATH" (concat (getenv "PATH") ":/Library/TeX/texbin")))
 #+end_src
 
 **** Better indirect buffers
@@ -1056,11 +837,11 @@ A lil bigger. No a lil smaller. Peeerrrfect.
     '(org-level-3 :height 1.1 :weight regular :slant normal)
     ;'(org-document-info  :inherit 'nano-face-faded)
     '(org-document-title   ;:foreground ,(doom-color 'black)
-                           :family "Roboto Slab"
+                           :family "Roboto"
                            :height 250
                            :weight medium)))
 #+end_src
-*** emphsis faces
+*** Emphasis faces
 
 I want to be able to do some kind of custom highlighting, so = becomes =red=.
 #+begin_src emacs-lisp :tangle yes
@@ -1078,7 +859,7 @@ Ideally I would be able to add my own custom bullshit in here, but I don't know 
 
 *** Ligatures
 
-    Yns make them pretty
+    Yns  make them pretty
 #+begin_src emacs-lisp :tangle yes
         (after! org
 (setq org-ellipsis " ▾ ")
@@ -1229,7 +1010,7 @@ Set some capture templates, which I rarely use tbrqhwy
                                  "* %?\n%U\n\n  %i\n  %a"
                                  :kill-buffer t)
                                 ("m" "Meeting"
-                                 entry (file+headline "/home/thomas/OneDrive/org-roam/agenda.org" "Future")
+                                 entry (file+headline "/Users/thomas/OneDrive/org-roam/agenda.org" "Future")
                                 ,(concat "* TODO %? :meeting:\n" "<%<%Y-%m-%d %a %H:00>>"))
                                 ("o" "Open Question Thesis"
                                  entry (file+headline "~/OneDrive/org-roam/openquestions.org" "Questions")
@@ -1333,7 +1114,7 @@ Nice big border with the color of the fringe
 	       '(min-height . 1)  '(height     . 45)
 	       '(min-width  . 1) '(width      . 81)
                '(vertical-scroll-bars . nil)
-               '(internal-border-width . 40)
+               '(internal-border-width . 30)
                '(left-fringe    . 0)
                '(right-fringe   . 0)
                '(tool-bar-lines . 0)
@@ -2364,7 +2145,7 @@ The future is here.
   (setq eva-idle-log-path         "~/OneDrive/self/data/idle.tsv")
   (setq eva-buffer-focus-log-path "~/OneDrive/self/data/buffer-focus.tsv")
   (setq eva-buffer-info-path      "~/OneDrive/self/data/buffer-info.tsv")
-  (setq eva-main-ledger-path      "~OneDrive/self/journal/finances/l.ledger")
+  (setq eva-main-ledger-path      "~/OneDrive/self/journal/finances/l.ledger")
   (setq eva-main-datetree-path    "~/OneDrive/org-roam/diary.org")
   :config
   (setq org-journal-dir "~/OneDrive/org-roam/journal")

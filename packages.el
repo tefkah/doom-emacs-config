@@ -73,7 +73,6 @@
 (package! org-gtd)
 (package! org-noter)
 
-(package! nano-emacs :recipe (:local-repo "~/Projects/emacs/nano-emacs"))
 (package! rainbow-mode)
 (package! org-transclusion :recipe (:host github :repo "/nobiot/org-transclusion"
                                     ;:build (:not compile)
@@ -109,7 +108,7 @@
  ; :recipe (:host github :repo "tecosaur/engrave-faces"))
 (package! mlscroll)
 
-(package! doom-modeline :recipe (:local-repo "~/Projects/emacs/doom-modeline"))
+(package! doom-modeline )
 
 
 (package! erefactor)
@@ -163,3 +162,5 @@
 
 
 (package! nano-theme :recipe (:host github :repo "rougier/nano-theme"))
+
+(package! org-roam-timestamps :recipe (:host github :repo "ThomasFKJorna/org-roam-timestamps"))
