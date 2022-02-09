@@ -1,5 +1,3 @@
-(add-to-list 'load-path "~/.config/doom/elisp")
-
 ;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
 
 ;; Place your private configuration here! Remember, you do not need to run 'doom
@@ -13,8 +11,8 @@
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
-(setq org-directory "~/OneDrive/org-roam/"
-      org-roam-directory "~/OneDrive/org-roam")
+(setq org-directory "~/Notes/"
+      org-roam-directory "~/Notes")
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -34,28 +32,15 @@
 	       '(min-height . 1)  '(height     . 45)
 	       '(min-width  . 1) '(width      . 81)
                '(vertical-scroll-bars . nil)
-               '(internal-border-width . 40)
+               '(internal-border-width . 20)
                '(left-fringe    . 0)
                '(right-fringe   . 0)
                '(tool-bar-lines . 0)
                '(menu-bar-lines . 0))))
 
-
-
-;  (setq centaur-tabs-style "wave")
-;  (setq centaur-tabs-set-bar 'under)
-;; Note: If you're not using Spacmeacs, in order for the underline to display
-;; correctly you must add the following line:
-;(setq x-underline-at-descent-line t)
-
-
-;;
-;;; Packages
-
 (setq doom-theme 'doom-flatwhite)
 
 (add-hook! 'solaire-mode-hook
-  ;(set-face-attribute 'solaire-fringe-face nil :background (face-background 'solaire-hl-line-face))
   (set-face-attribute 'fringe nil :background (face-background 'solaire-default-face))
   )
 
@@ -64,6 +49,9 @@
   :config
   (setq mixed-pitch-face 'variable-pitch))
 
+(add-hook! 'special-mode-hook (mixed-pitch-mode 1)
+           'delve-mode-hook (mixed-pitch-mode 1))
+
 (setq doom-font (font-spec :family "FiraCode Nerd Font" :size 15 :weight 'light)
        doom-variable-pitch-font (font-spec :family "Roboto" :style "Regular" :size 12 :weight 'regular))
 
@@ -71,32 +59,54 @@
 ;; available. You an either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
 
-(after! doom-modeline
-  (setq doom-modeline-enable-word-count t
-        doom-modeline-header-line nil
-        ;doom-modeline-hud nil
-        doom-themes-padded-modeline t
-        doom-flatwhite-brighter-modeline nil
-        doom-plain-brighter-modeline nil))
-(add-hook! 'doom-modeline-mode-hook
-           (progn
-  (set-face-attribute 'header-line nil
-                      :background (face-background 'mode-line)
-                      :foreground (face-foreground 'mode-line))
-  ))
+(use-package! good-scroll
+  :init (good-scroll-mode 1))
+
+(tooltip-mode 1)
 
 (after! doom-modeline
   (doom-modeline-def-modeline 'main
     '(bar matches buffer-info vcs word-count)
     '(buffer-position misc-info major-mode)))
 
+(defun thomas/centaur-tabs-buffer-tab-label (tab)
+  "Return a label for TAB.
+That is, a string used to represent it on the tab bar."
+  ;; Init tab style.
+  ;; Render tab.
+  (format " %s"
+          (let* ((rawbufname (if centaur-tabs--buffer-show-groups
+                             (centaur-tabs-tab-tabset tab)
+                           (buffer-name (car tab))))
+                (formatted-bufname (if (string= (file-name-extension rawbufname) "org")
+                             (if (and (> (length rawbufname) 14)
+                                      (string-match-p "[0-9]\\{14\\}" (substring rawbufname 0 14)))
+                                 (substring rawbufname 15)
+                               rawbufname)
+                           rawbufname))
+                (bufname (concat "  " formatted-bufname)))
+            (if (> centaur-tabs-label-fixed-length 0)
+                (centaur-tabs-truncate-string  centaur-tabs-label-fixed-length bufname)
+              bufname))))
+
 (after! centaur-tabs
-  (setq centaur-tabs-style "wave"))
+  (setq centaur-tabs-display-line nil)
+  (setq centaur-tabs-style "bar"
+        centaur-tabs-tab-label-function #'thomas/centaur-tabs-buffer-tab-label
+        centaur-tabs-label-fixed-length 20
+        centaur-tabs-height 40
+        centaur-tabs-bar-height 50
+        centaur-tabs-close-button "✕"
+        centaur-tabs-icon-scale-factor 0.8)
+  (centaur-tabs-change-fonts "Roboto Sans" 140)
+(set-face-background 'centaur-tabs-selected (doom-lighten (face-background 'default )0.1))
+(set-face-background 'centaur-tabs-selected-modified (doom-lighten (face-background 'default )0.1)))
+
+
 
 (use-package! org-fragtog
   :after org
-  :hook (org-mode . org-fragtog-mode)
-  )
+  :hook (org-mode . org-fragtog-mode))
 
 (use-package! org-appear
   :after org
@@ -107,8 +117,7 @@
            org-appear-autosubmarkers t ))
 
 (use-package! org-transclusion
-  :after org-roam
-  )
+  :after org-roam)
 
 (map! :map org-mode-map
 :nie "C-M-SPC" (cmd! (insert "\u200B")))
@@ -131,45 +140,72 @@
     (setq-local olivetti-body-width 44)
     (variable-pitch-mode 1)
     (olivetti-mode 1)
-    (centaur-tabs-local-mode -1)
+    (centaur-tabs-local-mode 1)
 
   (set-face-background 'magit-section-highlight (face-background 'default))))
 
+;; I don't actually like the buffer that much
 (after! org-roam
+  (setq +org-roam-open-buffer-on-find-file nil)
 (add-hook! 'org-roam-mode-hook #'org-roam-buffer-setup))
 
 (use-package! org-roam-ui
   :after org-roam
   :config
-  (setq org-roam-ui-open-on-start nil)
-  (setq org-roam-ui-browser-function #'xwidget-webkit-browse-url))
+    (setq org-roam-ui-open-on-start nil)
+    (setq org-roam-ui-browser-function #'xwidget-webkit-browse-url))
 
 (after! org-roam
     (setq org-roam-capture-templates
           `(("s" "standard" plain "%?"
-     :if-new
-     (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
-      "#+title: ${title}\n#+filetags: \n\n ")
-     :unnarrowed t)
-        ("d" "definition" plain
-         "%?"
-         :if-new
-         (file+head "${slug}.org" "#+title: ${title}\n#+filetags: definition \n\n* Definition\n\n\n* Examples\n")
-         :unnarrowed t)
-        ("r" "ref" plain "%?"
-           :if-new
-           (file+head "${citekey}.org"
-           "#+title: ${slug}: ${title}\n
+             :if-new
+             (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
+                        "#+title: ${title}\n#+filetags: \n\n ")
+             :unnarrowed t)
+            ("d" "definition" plain
+             "%?"
+             :if-new
+             (file+head "${slug}.org" "#+title: ${title}\n#+filetags: definition \n\n* Definition\n\n\n* Examples\n")
+             :unnarrowed t)
+            ("r" "ref" plain "%?"
+             :if-new
+             (file+head "${citekey}.org"
+                        "#+title: ${slug}: ${title}\n
 \n#+filetags: reference ${keywords} \n
 \n* ${title}\n\n
 \n* Summary
 \n\n\n* Rough note space\n")
-           :unnarrowed t)
-          ("p" "person" plain "%?"
-           :if-new
-           (file+head "${slug}.org" "%^{relation|some guy|family|friend|colleague}p %^{birthday}p %^{address}p
+             :unnarrowed t)
+            ("p" "person" plain "%?"
+             :if-new
+             (file+head "${slug}.org" "%^{relation|some guy|family|friend|colleague}p %^{birthday}p %^{address}p
 #+title:${slug}\n#+filetags: :person: \n"
-                      :unnarrowed t)))))
+                        :unnarrowed t)
+             ("ts" "standard (thesis)" plain "%?"
+              :if-new
+              (file+head "thesis/%<%Y%m%d%H%M%S>-${slug}.org"
+                         "#+title: ${title}\n#+filetags: \n\n ")
+              :unnarrowed t)
+             ("tc" "chapter (thesis)" plain "%?"
+              :if-new
+              (file+head "thesis/${slug}.org"
+                         "#+title: ${title}\n#+filetags: :chapter: \n\n
+\n - Outline (do this first)\n  -")
+              :unnarrowed t)
+             ("td" "definition (thesis)" plain
+              "%?"
+              :if-new
+              (file+head "$thesis/{slug}.org" "#+title: ${title}\n#+filetags:     definition \n\n* Definition\n\n\n* Examples\n")
+              :unnarrowed t)
+             ("tr" "ref (thesis)" plain "%?"
+              :if-new
+              (file+head "$thesis/{citekey}.org"
+                         "#+title: ${slug}: ${title}\n
+\n#+filetags: reference ${keywords} \n
+\n* ${title}\n\n
+\n* Summary
+\n\n\n* Rough note space\n")
+              :unnarrowed t)))))
 
 (use-package! org-ref
     ;:after org-roam
@@ -177,24 +213,24 @@
     (setq
          org-ref-completion-library 'org-ref-ivy-cite
          org-ref-get-pdf-filename-function 'org-ref-get-pdf-filename-helm-bibtex
-         org-ref-default-bibliography (list "/Users/thomas/OneDrive/org-roam/bib/Library.bib")
-         org-ref-bibliography-notes "/Users/thomas/OneDrive/org-roam/bibnotes.org"
-         org-ref-note-title-format "* %y - %t\n :PROPERTIES:\n  :Custom_ID: %k\n  :NOTER_DOCUMENT: %F\n :ROAM_KEY: cite:%k\n  :AUTHOR: %9a\n  :JOURNAL: %j\n  :YEAR: %y\n  :VOLUME: %v\n  :PAGES: %p\n  :DOI: %D\n  :URL: %U\n :END:\n\n"
-         org-ref-notes-directory "/Users/thomas/OneDrive/org-roam/"
+         org-ref-default-bibliography (list "/Users/thomas/Notes/bib/Library.bib")
+         org-ref-bibliography-notes "/Users/thomas/Notes/bibnotes.org"
+         org-ref-note-title-format "* %y - %t\n :properties:\n  :Custom_ID: %k\n  :noter_document: %F\n :ROAM_KEY: cite:%k\n  :AUTHOR: %9a\n  :JOURNAL: %j\n  :YEAR: %y\n  :VOLUME: %v\n  :PAGES: %p\n  :DOI: %D\n  :URL: %U\n :END:\n\n"
+         org-ref-notes-directory "/Users/thomas/Notes/"
          org-ref-notes-function 'orb-edit-notes
     ))
 
 (after! org-ref
 (setq
- bibtex-completion-notes-path "/Users/thomas/OneDrive/org-roam/"
- bibtex-completion-bibliography "/Users/thomas/OneDrive/org-roam/bib/Library.bib"
+ bibtex-completion-notes-path "/Users/thomas/Notes/"
+ bibtex-completion-bibliography "/Users/thomas/Notes/bib/Library.bib"
  bibtex-completion-pdf-field "file"
  bibtex-completion-notes-template-multiple-files
  (concat
   "#+TITLE: ${title}\n"
   "#+ROAM_KEY: cite:${=key=}\n"
   "* TODO Notes\n"
-  ":PROPERTIES:\n"
+  ":properties:\n"
   ":Custom_ID: ${=key=}\n"
   ":NOTER_DOCUMENT: %(orb-process-file-field \"${=key=}\")\n"
   ":AUTHOR: ${author-abbrev}\n"
@@ -217,14 +253,96 @@
    '("citekey" "title" "url" "file" "author-or-editor" "keywords" "pdf" "doi" "author" "tags" "year" "author-bbrev")))
 ;)
 
+(use-package! citar
+  :after org-roam
+  :config
+  (setq
+  org-cite-global-bibliography '("~/Notes/thesis-writing/bibliography/Academic.bib")
+  citar-bibliography org-cite-global-bibliography
+  org-cite-insert-processor 'citar
+  org-cite-follow-processor 'citar
+  org-cite-activate-processor 'citar
+  citar-templates
+      '((main . "${author editor:30}     ${date year issued:4}     ${title:48}")
+        (suffix . "          ${=key= id:15}    ${=type=:12}    ${tags keywords:*}")
+        (note . "Notes on ${author editor}, ${title}"))
+  citar-symbols
+      `((file ,(all-the-icons-faicon "file-o" :face 'all-the-icons-green :v-adjust -0.1) . " ")
+        (note ,(all-the-icons-material "speaker_notes" :face 'all-the-icons-blue :v-adjust -0.3) . " ")
+        (link ,(all-the-icons-octicon "link" :face 'all-the-icons-orange :v-adjust 0.01) . " "))
+citar-symbol-separator "  "
+citar-open-note-function 'orb-citar-edit-note
+bibtex-completion-bibliography org-cite-global-bibliography
+citar-format-note-function 'orb--new-note
+org-cite-export-processors '((latex biblatex)
+                             (t basic)))
+
+  ;; optional: org-cite-insert is also bound to C-c C-x C-@
+  :bind
+  (:map org-mode-map :package org ("C-c b" . #'org-cite-insert)))
+
+(use-package! oc-biblatex
+  :after oc)
+
+(after! oc
+  (defun org-ref-to-org-cite ()
+    "Attempt to convert org-ref citations to org-cite syntax."
+    (interactive)
+    (let* ((cite-conversions '(("cite" . "//b") ("Cite" . "//bc")
+                               ("nocite" . "/n")
+                               ("citep" . "") ("citep*" . "//f")
+                               ("parencite" . "") ("Parencite" . "//c")
+                               ("citeauthor" . "/a/f") ("citeauthor*" . "/a")
+                               ("citeyear" . "/na/b")
+                               ("Citep" . "//c") ("Citealp" . "//bc")
+                               ("Citeauthor" . "/a/cf") ("Citeauthor*" . "/a/c")
+                               ("autocite" . "") ("Autocite" . "//c")
+                               ("notecite" . "/l/b") ("Notecite" . "/l/bc")
+                               ("pnotecite" . "/l") ("Pnotecite" . "/l/bc")))
+           (cite-regexp (rx (regexp (regexp-opt (mapcar #'car cite-conversions) t))
+                            ":" (group (+ (not (any "\n     ,.)]}")))))))
+      (save-excursion
+        (goto-char (point-min))
+        (while (re-search-forward cite-regexp nil t)
+          (message (format "[cite%s:@%s]"
+                                 (cdr (assoc (match-string 1) cite-conversions))
+                                 (match-string 2)))
+          (replace-match (format "[cite%s:@%s]"
+                                 (cdr (assoc (match-string 1) cite-conversions))
+                                 (match-string 2))))))))
+
+(defun org-roam-rg-search ()
+  "Search org-roam directory using consult-ripgrep. With live-preview."
+  (interactive)
+  (let ((consult-ripgrep-args "rg --null --ignore-case --type org --line-buffered --max-columns=500 --no-heading --line-number --context 2 . "))
+    (consult-ripgrep org-roam-directory)))
+;(global-set-key (kbd "C-c rr") 'bms/org-roam-rg-search)
+
+(after! consult
+  (setq consult-ripgrep-args
+  "rg --null --line-buffered --color=never --max-columns=1000 --path-separator /\
+   --smart-case --no-heading --line-number --context=3 ."
+))
+
+(defun zotnote-to-org ()
+  (interactive)
+  (progn
+    (save-excursion
+  (replace-string "\\par" "\n"))
+    (save-excursion
+  (replace-string "“" "#+begin_quote\n/"))
+    (save-excursion
+  (replace-string "”" "/\n#+end_quote\n\n"))
+    (save-buffer)))
+
 (use-package! org-ol-tree
   :after org
   :commands org-ol-tree
   :hook (org-ol-tree-mode . visual-line-mode)
   :config
   (setq org-ol-tree-ui-window-auto-resize nil
-        org-ol-tree-ui-window-max-width 0.3
-        org-ol-tree-ui-window-position 'left))
+        org-ol-tree-ui-window-max-width 0.3))
+(add-hook! 'org-ol-tree-mode-hook (lambda () (when (centaur-tabs-mode) (centaur-tabs-local-mode -1))))
 (map! :map org-mode-map
       :after org
       :localleader
@@ -241,7 +359,7 @@
 
 (add-hook! 'org-mode-hook #'org-mode-remove-stars)
 
-  ;; hide title / author ... keywords
+;; hide title / author ... keywords
 
 ;;; Ugly org hooks
 (defun nicer-org ()
@@ -258,41 +376,11 @@
 
 (add-hook! 'org-mode-hook  #'nicer-org)
 
-(setq org-preview-latex-process-alist
-  '((dvipng
-     :programs ("/Library/TeX/texbin/latex" "/Library/TeX/texbin/dvipng")
-     :description "dvi > png"
-     :message "you need to install the programs: latex and dvipng."
-     :image-input-type "dvi"
-     :image-output-type "png"
-     :image-size-adjust (1.0 . 1.0)
-     :latex-compiler ("/Library/TeX/texbin/latex -interaction nonstopmode -output-directory %o %f")
-     :image-converter ("/Library/TeX/texbin/dvipng -D %D -T tight -bg Transparent -o %O %f"))
-    (dvisvgm
-     :programs ("/Library/TeX/texbin/latex" "/Library/TeX/texbin/dvisvgm")
-     :description "dvi > svg"
-     :message "you need to install the programs: latex and dvisvgm."
-     :image-input-type "dvi"
-     :image-output-type "svg"
-     :image-size-adjust (1.7 . 1.5)
-     :latex-compiler ("/Library/TeX/texbin/latex -interaction nonstopmode -output-directory %o %f")
-     :image-converter ("/Library/TeX/texbin/dvisvgm %f -n -b min -c %S -o %O"))
-    (imagemagick
-     :programs ("latex" "convert")
-     :description "pdf > png"
-     :message "you need to install the programs: latex and imagemagick."
-     :image-input-type "pdf"
-     :image-output-type "png"
-     :image-size-adjust (1.0 . 1.0)
-     :latex-compiler ("pdflatex -interaction nonstopmode -output-directory %o %f")
-     :image-converter
-     ("convert -density %D -trim -antialias %f -quality 100 %O"))))
-
 (after! org
-  (setq org-startup-with-latex-preview 1 ;always preview latex
-        org-latex-create-formula-image-program 'dvipng
-        LaTeX-command "/Library/TeX/texbin/latex"
-        latex-run-command "/Library/TeX/texbin/latex"
+  (setq org-startup-with-latex-preview nil ;don't preview latex
+        ;org-latex-create-formula-image-program 'dvipng
+        ;LaTeX-command "latex"
+        ;latex-run-command "latex"
         org-startup-with-inline-images 1 ;always preview images
         ;org-hide-leading-stars 1
         org-startup-indented nil         ; don't indent
@@ -333,6 +421,8 @@
       :foreground "red"))
     "Red."
     :group 'basic-faces)
+
+  (set-face-font 'org-quote (font-spec :family "Noto Serif"))
   (custom-set-faces!
     ;'(org-document-title :height 1.6 :weight bold)
     '(org-level-1 :height 1.3 :weight extrabold :slant normal)
@@ -353,7 +443,7 @@
           ("~" code)
           ("+" (:strike-through t)))))
 
-        (after! org
+(after! org
 (setq org-ellipsis " ▾ ")
   (appendq! +ligatures-extra-symbols
           `(:checkbox      "☐"
@@ -364,7 +454,7 @@
             :ellipses      "…"
             :arrow_right   "→"
             :arrow_left    "←"
-            :title         nil
+            :title         ""
             :subtitle      "𝙩"
             :author        "𝘼"
             :date          "𝘿"
@@ -396,7 +486,7 @@
             :priority_d   ,(propertize "⬇" 'face 'all-the-icons-green)
             :priority_e   ,(propertize "❓" 'face 'all-the-icons-blue)
             :roam_tags nil
-            :filetags nil))
+            :filetags ""))
 (set-ligatures! 'org-mode
   :merge t
   :checkbox      "[ ]"
@@ -439,18 +529,35 @@
   :priority_d    "[#D]"
   :priority_e    "[#E]"
   :roam_tags     "#+roam_tags:"
-  :filetags      "#+filetags:")
+ ;; :filetags      "#+filetags:"
+  :something     "#+filetags:"
+  :filetags      "#+FILETAGS:")
 (plist-put +ligatures-extra-symbols :name "⁍")
 )
 
 (with-eval-after-load 'org
   (plist-put org-format-latex-options :background 'default))
 
+(use-package! org-caldav
+  :after org
+  :config (setq org-caldav-url "https://use03.thegood.cloud/remote.php/dav/calendars/hello@tefkah.com"
+                org-caldav-calendar-id "personal"
+                org-caldav-inbox "/Users/thomas/Notes/GTD/calendar.org"
+                org-caldav-files '("/Users/thomas/Notes/GTD/calendar.org")
+                org-caldav-sync-changes-to-org 'all
+                org-icalendar-alarm-time 20
+                org-icalendar-use-deadline '(event-if-not-todo todo-due)
+                org-icalendar-use-scheduled '(event-if-not-todo)
+                org-icalendar-include-todo 'all
+                org-caldav-sync-todo t
+                org-icalendar-categories '(local-tags)
+                org-icalendar-timezone "Europe/Amsterdam"))
+
 (use-package! org-gtd
   :after org
   :config
   ;; where org-gtd will put its files. This value is also the default one.
-  (setq org-gtd-directory "~/OneDrive/org-roam/")
+  (setq org-gtd-directory "~/Notes/")
   ;; package: https://github.com/Malabarba/org-agenda-property
   ;; this is so you can see who an item was delegated to in the agenda
   (setq org-agenda-property-list '("DELEGATED_TO"))
@@ -470,24 +577,25 @@
   :init
   (bind-key "C-c c" 'org-gtd-clarify-finalize)) ;; the keybinding to hit when you're done editing an item in the processing phase
 
-(setq org-agenda-files '("~/OneDrive/org-roam/inbox" "~/OneDrive/org-roam/actionable.org"
-                         "~/OneDrive/org-roam/agenda.org" "~/OneDrive/org-roam/incubate.org"
-                         "~/OneDrive/org-roam/openquestions.org"))
+(setq org-agenda-files '("~/Notes/inbox" "~/Notes/actionable.org"
+                         "~/Notes/agenda.org" "~/Notes/incubate.org"
+                         "~/Notes/openquestions.org"))
 
 (after! org
 (setq org-capture-templates `(("i" "Inbox"
-                                 entry (file "~/OneDrive/org-roam/inbox.org")
-                                 "* %?\n%U\n\n  %i"
+                                 entry (file "~/Notes/GTD/calendar.org")
+                                 "* TODO %?\n%U\n\n  %i"
                                  :kill-buffer t)
                                 ("l" "Todo with link"
                                  entry (file "~/OneDrive/org-rom/inbox.org")
                                  "* %?\n%U\n\n  %i\n  %a"
                                  :kill-buffer t)
                                 ("m" "Meeting"
-                                 entry (file+headline "/Users/thomas/OneDrive/org-roam/agenda.org" "Future")
-                                ,(concat "* TODO %? :meeting:\n" "<%<%Y-%m-%d %a %H:00>>"))
+                                 entry (file+headline "/Users/thomas/Notes/GTD/calendar.org" "Future")
+                                ,(concat "* %? :meeting:\n" "<%<%Y-%m-%d %a %H:00>>")
+                                :kill-buffer t)
                                 ("o" "Open Question Thesis"
-                                 entry (file+headline "~/OneDrive/org-roam/openquestions.org" "Questions")
+                                 entry (file+headline "~/Notes/openquestions.org" "Questions")
                                  "* OPEN %? \n %U\n")))
 (set-face-attribute 'org-headline-done nil :strike-through t)
 )
@@ -712,13 +820,12 @@ Imitates the look of wordprocessors a bit."
   ;:hook (olivetti-mode . double-header-line-mode)
   :config
     (setq olivetti-min-body-width 50
-          olivetti-body-width 80
+          olivetti-body-width 68
           olivetti-style 'fancy ; fantastic new layout
           olivetti-margin-width 12)
     (add-hook! 'olivetti-mode-hook (window-divider-mode -1))
     (add-hook! 'olivetti-mode-hook (set-face-attribute 'window-divider nil :foreground (face-background 'fringe) :background (face-background 'fringe)))
-    (add-hook! 'olivetti-mode-hook (set-face-attribute 'vertical-border nil :foreground (face-background 'fringe) :background (face-background 'fringe)))
-    )
+    (add-hook! 'olivetti-mode-hook (set-face-attribute 'vertical-border nil :foreground (face-background 'fringe) :background (face-background 'fringe))))
 
 (require 'org-inlinetask)
 
@@ -789,7 +896,7 @@ Imitates the look of wordprocessors a bit."
         (display-line-numbers-mode -1))
     (display-line-numbers-mode 1)))
 
-                ;;;;;;;;
+;;;;;;;;
 ;;
 ;; org-latex-export
 ;;
@@ -853,10 +960,22 @@ Imitates the look of wordprocessors a bit."
     ;(add-to-list 'org-latex-default-packages-alist '("style=apa, backend=biber" "biblatex" nil)))
     ;(setq org-format-latex-header (concat org-format-latex-header "\n\\")))
 
-(add-hook! 'latex-mode-hook (setq TeX-engine 'xetex) 99)
+(add-hook! 'latex-mode-hook (setq TeX-engine 'luatex) 99)
 
     ;  (call-process TeX-shell nil (TeX-process-buffer-name file) nil
      ;               TeX-shell-command-option (concat command file))))
+
+(after! latex
+(setq
+TeX-view-program-list
+        '(("Evince" "evince --page-index=%(outpage) %o")
+         ("preview-pane" latex-preview-pane-mode)))
+(setq TeX-view-program-selection
+'((output-pdf "Evince")
+ (output-dvi "open")
+ (output-pdf "open")
+ (output-html "open")
+ (output-pdf "preview-pane"))))
 
 (after! latex
 (defun latex-dwim ()
@@ -895,41 +1014,6 @@ Otherwise compile all the .tex files you find using LaTexMK."
 (map! :map 'doom-leader-regular-map
       :desc "LatexMk dwim" "l" #'latex-dwim)
 
-(add-hook! 'after-init-hook #'treemacs)
-
-(after! treemacs
-(add-hook! 'treemacs-mode-hook (setq window-divider-mode -1
-                                     variable-pitch-mode 1
-                                     treemacs-follow-mode 1))
-)
-
-(use-package! visual-regexp
-  :config
-        (map! :map 'doom-leader-regular-map
-              (:prefix ("v" . "visual regex")
-               :desc "Replace regexp" "r"#'vr/replace)))
-
-(use-package! visual-regexp-steroids
-  :after 'visual-regexp)
-
-(use-package! devdocs
-  :after lsp
-  :config
-  (add-hook! 'devdocs-mode-hook
-    (face-remap-add-relative 'variable-pitch '(:family "Noto Sans"))))
-
-(add-hook! 'after-init-hook
-           (progn
-  (setq-hook! 'typescript-mode-hook +format-with :nil)
-  (add-hook! 'typescript-mode-hook 'prettier-mode)
-  (setq-hook! 'rjsx-mode-hook +format-with :nil)
-  (add-hook! 'rjsx-mode-hook 'prettier-mode)
-  (setq-hook! 'js2-mode-hook +format-with :nil)
-  (add-hook! 'js2-mode-hook 'prettier-mode)
-  (setq-hook! 'typescript-tsx-mode-hook +format-with :nil)
-  (add-hook! 'typescript-tsx-mode-hook 'prettier-mode)
-  ))
-
 (use-package! eva
 :init
 (setq ess-history-file "~/OneDrive/self/data/.Rhistory")
@@ -939,14 +1023,14 @@ Otherwise compile all the .tex files you find using LaTexMK."
         eva-user-birthday "2021-07-16"
         eva-user-short-title "Bruh"
         eva-fallback-to-emacs-idle t)
-      (setq eva--idle-secs-fn #'eva--idle-secs-gnome)
+     ; (setq eva--idle-secs-fn #'eva--idle-secs-gnome)
   (setq eva-idle-log-path         "~/OneDrive/self/data/idle.tsv")
   (setq eva-buffer-focus-log-path "~/OneDrive/self/data/buffer-focus.tsv")
   (setq eva-buffer-info-path      "~/OneDrive/self/data/buffer-info.tsv")
   (setq eva-main-ledger-path      "~/OneDrive/self/journal/finances/l.ledger")
-  (setq eva-main-datetree-path    "~/OneDrive/org-roam/diary.org")
+  (setq eva-main-datetree-path    "~/Notes/diary.org")
   :config
-  (setq org-journal-dir "~/OneDrive/org-roam/journal")
+  (setq org-journal-dir "~/Notes/journal")
     (setq org-journal-file-format "%F.org")
     (require 'eva-builtin)
   (require 'eva-activity)
@@ -1030,16 +1114,6 @@ Otherwise compile all the .tex files you find using LaTexMK."
                                    :cost-false-neg 0)))
   (eva-mode))
 
-        ;;;;;;;;;;;;;
-;;;
-;;; Other
-;;;
-;;;;;;;;;;;;
-
-(setq vterm-shell "/usr/bin/fish")
-
-(setq evil-escape-key-sequence "qd")
-
 ;(use-package! tree-sitter
 ;  :config
 ;  (require 'tree-sitter-langs)
@@ -1058,50 +1132,6 @@ Otherwise compile all the .tex files you find using LaTexMK."
   :commands (info-colors-fontify-node))
 
 (add-hook 'Info-selection-hook 'info-colors-fontify-node)
-
-(map! :leader
-      (:prefix-map ("r" . "regular")
-       :desc "find file"            "f"   #'org-roam-node-find
-       :desc "find ref"             "F"   #'org-roam-ref-find
-       :desc "center scroll"        "s"   #'prot/scroll-center-cursor-mode
-       :desc "start taking notes"   "S"   #'org-noter
-       :desc "toggle buffer"        "b"   #'org-roam-buffer-toggle
-       :desc "insert note"          "i"   #'org-roam-node-insert
-       :desc "server"               "g"   #'org-roam-server
-       :desc "quit notes"           "q"   #'org-noter-kill-session
-       :desc "tag (roam)"           "t"   #'org-roam-tag-add
-       :desc "tag (org)"            "T"   #'org-set-tags-command
-       :desc "pomodoro"             "p"   #'org-pomodoro
-       :desc "change nano-theme"    "n"   #'nano-toggle-theme
-       :desc "rebuid db"            "d"   #'org-roam-db-build-cache
-       :desc "cite"                 "c"   #'helm-bibtex
-       :desc "thesaurus this word"  "w"  #'powerthesaurus-lookup-word-at-point
-       :desc "thesaurus lookup word" "W"   #'powerthesaurus-lookup-word
-       :desc "outline"              "o"   #'org-ol-tree
-       (:prefix  ("r" . "orui")
-                :desc "orui-mode" "r" #'org-roam-ui-mode
-                :desc "zoom" "z" #'orui-node-zoom
-                :desc "open" "o" #'orui-open
-                :desc "local" "l" #'orui-node-local
-                :desc "sync theme" "t" #'orui-sync-theme
-                :desc "follow" "f" #'orui-follow-mode)
-       (:prefix ("m" . "transclusion")
-                :desc "make link"            "m"   #'org-transclusion-make-from-link
-                :desc "transclusion mode"    "t"   #'org-transclusion-mode
-                :desc "add at point"         "a"   #'org-transclusion-add-at-point
-                :desc "add all in buffer"    "A"   #'org-transclusion-add-all-in-buffer
-                :desc "remove at point"      "r"   #'org-transclusion-remove-at-point
-                :desc "remove all in buffer" "R"   #'org-transclusion-remove-all-in-buffer
-                :desc "start live edit"      "s"   #'org-transclusion-live-sync-start-at-point
-                :desc "stop live edit"       "S"   #'org-transclusion-live-sync-exit-at-point)
-       )
-      (:prefix ("d" . "GTD")
-       :desc  "process inbox" "p"#'org-gtd-process-inbox
-       :desc  "agenda list" "a"#'org-agenda-list
-       :desc  "capture" "c"#'org-gtd-capture
-       :desc  "show next" "n" #'org-gtd-show-all-next
-       :desc  "show stuck project" "s" #'org-gtd-show-stuck-projects)
-      )
 
 (map! "C-w" nil)
 (global-set-key  (kbd "C-<tab>") #'evil-window-next)
@@ -1167,8 +1197,12 @@ Otherwise compile all the .tex files you find using LaTexMK."
         "n" 'iscroll-forward-line
         "e" 'iscroll-previous-line)))
 
-(use-package! all-the-icons-ivy-rich
-  :init (all-the-icons-ivy-rich-mode))
+(use-package! vertico-posframe
+  :after vertico
+  :config (vertico-posframe-mode 1)
+  (setq vertico-posframe-border-width 10
+        vertico-posframe-parameters '((internal-border-width . 10)))
+  (add-hook! 'vertico-posframe-mode-hook (set-face-background 'vertico-posframe-border (face-background 'fringe))))
 
 (defun margin-width-pixel (&optional right)
   "Return the width of the left or optionally right margin in pixels."
@@ -1189,3 +1223,69 @@ Otherwise compile all the .tex files you find using LaTexMK."
   (org-clear-latex-preview))
 
 (server-start)
+
+(after! doom-modeline
+  (setq doom-modeline-enable-word-count t
+        doom-modeline-header-line nil
+        ;doom-modeline-hud nil
+        doom-themes-padded-modeline t
+        doom-flatwhite-brighter-modeline nil
+        doom-plain-brighter-modeline nil))
+(add-hook! 'doom-modeline-mode-hook
+           (progn
+  (set-face-attribute 'header-line nil
+                      :background (face-background 'mode-line)
+                      :foreground (face-foreground 'mode-line))
+  ))
+
+;;;;;;;;;;;;;
+;;;
+;;; Other
+;;;
+;;;;;;;;;;;;
+
+(setq vterm-shell "/usr/bin/fish")
+
+(setq evil-escape-key-sequence "qd")
+
+(map! :leader
+      (:prefix-map ("r" . "regular")
+       :desc "edit org-block"       "e"   #'org-edit-special
+       :desc "find note"            "f"   #'org-roam-node-find
+       :desc "find ref"             "F"   #'org-roam-ref-find
+       :desc "sync calendar"        "s"   #'org-caldav-sync
+       :desc "center scroll"        "S"   #'prot/scroll-center-cursor-mode
+       :desc "toggle buffer"        "b"   #'org-roam-buffer-toggle
+       :desc "insert note"          "i"   #'org-roam-node-insert
+       :desc "rg search roam"       "g"   #'org-roam-rg-search
+       :desc "quit notes"           "q"   #'org-noter-kill-session
+       :desc "tag (roam)"           "t"   #'org-roam-tag-add
+       :desc "tag (org)"            "T"   #'org-set-tags-command
+       :desc "pomodoro"             "p"   #'org-pomodoro
+       :desc "rebuid db"            "d"   #'org-roam-db-build-cache
+       :desc "cite"                 "c"   #'helm-bibtex
+       :desc "thesaurus this word"  "w"  #'powerthesaurus-lookup-word-at-point
+       :desc "thesaurus lookup word" "W"   #'powerthesaurus-lookup-word
+       :desc "outline"              "o"   #'org-ol-tree
+       (:prefix  ("r" . "orui")
+                :desc "orui-mode" "r" #'org-roam-ui-mode
+                :desc "zoom" "z" #'orui-node-zoom
+                :desc "open" "o" #'orui-open
+                :desc "local" "l" #'orui-node-local
+                :desc "sync theme" "t" #'orui-sync-theme
+                :desc "follow" "f" #'orui-follow-mode)
+       (:prefix ("m" . "transclusion")
+                :desc "make link"            "m"   #'org-transclusion-make-from-link
+                :desc "transclusion mode"    "t"   #'org-transclusion-mode
+                :desc "add at point"         "a"   #'org-transclusion-add-at-point
+                :desc "add all in buffer"    "A"   #'org-transclusion-add-all-in-buffer
+                :desc "remove at point"      "r"   #'org-transclusion-remove-at-point
+                :desc "remove all in buffer" "R"   #'org-transclusion-remove-all-in-buffer
+                :desc "start live edit"      "s"   #'org-transclusion-live-sync-start-at-point
+                :desc "stop live edit"       "S"   #'org-transclusion-live-sync-exit-at-point) )
+      (:prefix ("d" . "GTD")
+       :desc  "process inbox" "p"#'org-gtd-process-inbox
+       :desc  "agenda list" "a"#'org-agenda-list
+       :desc  "capture" "c"#'org-gtd-capture
+       :desc  "show next" "n" #'org-gtd-show-all-next
+       :desc  "show stuck project" "s" #'org-gtd-show-stuck-projects))

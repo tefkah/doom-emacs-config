@@ -1,0 +1,7 @@
+# key: jsx
+# name: jsx
+# --
+#+begin_export jsx
+$1
+#+end_export
+$0

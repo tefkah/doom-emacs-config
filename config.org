@@ -1,7 +1,4 @@
-#+title:Doom-emacs config
-* Basic stuff
-#+begin_src emacs-lisp :tangle yes
-(add-to-list 'load-path "~/.config/doom/elisp")
+ 'load-path "~/.config/doom/elisp")
 #+end_src
 
   Yooooooooooo let's go
@@ -23,8 +20,8 @@
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
-(setq org-directory "~/OneDrive/org-roam/"
-      org-roam-directory "~/OneDrive/org-roam")
+(setq org-directory "~/Notes/"
+      org-roam-directory "~/Notes")
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -70,30 +67,6 @@
 ;;
   #+end_src
 
-  Obsolete function due to nano-toggle-face
-  #+begin_src emacs-lisp :tangle no
-
-(defun nano-change-theme-dark ()
-  (interactive)
-  (progn
-  (nano-theme-set-dark)
-  (nano-faces)
-  (nano-theme)))
-
-(defun nano-change-theme-light ()
-  (interactive)
-  (progn
-  (nano-theme-set-light)
-  (nano-faces)
-  (nano-theme)))
-
-(defun nano-change-theme ()
-  (interactive)
-  (if nano-theme-light-var (nano-change-theme-dark) (nano-change-theme-light))
-  (setq nano-theme-light-var (not nano-theme-light-var)))
-  #+end_src
-
-  I always want this, regardless of whether I am uisng nano or not.
 
   #+begin_src emacs-lisp :tangle yes
 (setq default-frame-alist
@@ -102,7 +75,7 @@
 	       '(min-height . 1)  '(height     . 45)
 	       '(min-width  . 1) '(width      . 81)
                '(vertical-scroll-bars . nil)
-               '(internal-border-width . 40)
+               '(internal-border-width . 20)
                '(left-fringe    . 0)
                '(right-fringe   . 0)
                '(tool-bar-lines . 0)
@@ -110,15 +83,6 @@
 
 
 
-;  (setq centaur-tabs-style "wave")
-;  (setq centaur-tabs-set-bar 'under)
-;; Note: If you're not using Spacmeacs, in order for the underline to display
-;; correctly you must add the following line:
-;(setq x-underline-at-descent-line t)
-
-
-;;
-;;; Packages
   #+end_src
 *** Doom
    I'm either using nano or doom-theme, this is the latter
@@ -129,7 +93,6 @@
 To set the fringes how i want them, i.e, in the opposite color of the background.
 #+begin_src emacs-lisp :tangle yes
 (add-hook! 'solaire-mode-hook
-  ;(set-face-attribute 'solaire-fringe-face nil :background (face-background 'solaire-hl-line-face))
   (set-face-attribute 'fringe nil :background (face-background 'solaire-default-face))
   )
 #+end_src
@@ -143,6 +106,12 @@ It's nice to have both mono and proportional fonts in org-mode, but mostly propo
   :config
   (setq mixed-pitch-face 'variable-pitch))
 #+end_src
+And actually, I would like that in a lot of modes tbh
+
+#+begin_src emacs-lisp :tangle yes
+(add-hook! 'special-mode-hook (mixed-pitch-mode 1)
+           'delve-mode-hook (mixed-pitch-mode 1))
+#+end_src
 
 There's not a lot of good fonts I've noticed. Fira code is the one I keep coming back to.
 #+begin_src emacs-lisp :tangle yes
@@ -154,122 +123,23 @@ There's not a lot of good fonts I've noticed. Fira code is the one I keep coming
 ;; `load-theme' function. This is the default:
 #+end_src
 
+** Feel
+
+It's been a while since I checked but =good-scroll-mode= has gotten quite good since I last used it, so let's just use it all the time!
+#+begin_src emacs-lisp :tangle yes
+(use-package! good-scroll
+  :init (good-scroll-mode 1))
+#+end_src
+
+** Tooltips
+
+
+Love hovering
+#+begin_src emacs-lisp :tangle yes
+(tooltip-mode 1)
+#+end_src
+
 ** Modeline
-#+begin_src emacs-lisp :tangle no
-(defvar +modeline--old-bar-height nil)
-;;;###autoload
-(defun +modeline-resize-for-font-h ()
-  "Adjust the modeline's height when the font size is changed by
-`doom/increase-font-size' or `doom/decrease-font-size'.
-Meant for `doom-change-font-size-hook'."
-  (unless +modeline--old-bar-height
-    (setq +modeline--old-bar-height doom-modeline-height))
-  (let ((default-height +modeline--old-bar-height)
-        (scale (or (frame-parameter nil 'font-scale) 0)))
-    (setq doom-modeline-height
-          (if (> scale 0)
-              (+ default-height (* scale doom-font-increment))
-            default-height))))
-
-;;;###autoload
-(defun +modeline-update-env-in-all-windows-h (&rest _)
-  "Update version strings in all buffers."
-  (dolist (window (window-list))
-    (with-selected-window window
-      (when (fboundp 'doom-modeline-update-env)
-        (doom-modeline-update-env))
-      (force-mode-line-update))))
-
-;;;###autoload
-(defun +modeline-clear-env-in-all-windows-h (&rest _)
-  "Blank out version strings in all buffers."
-  (unless (featurep! +light)
-    (dolist (buffer (buffer-list))
-      (with-current-buffer buffer
-        (setq doom-modeline-env--version
-              (bound-and-true-p doom-modeline-load-string)))))
-  (force-mode-line-update t))
-
-(use-package! doom-modeline
-  :hook (after-init . doom-modeline-mode)
-  :hook (doom-modeline-mode . size-indication-mode) ; filesize in modeline
-  :hook (doom-modeline-mode . column-number-mode)   ; cursor column in modeline
-  :init
-  (unless after-init-time
-    ;; prevent flash of unstyled modeline at startup
-    (setq-default mode-line-format nil))
-  ;; We display project info in the modeline ourselves
-  (setq projectile-dynamic-mode-line nil)
-  ;; Set these early so they don't trigger variable watchers
-  (setq doom-modeline-bar-width 3
-        doom-modeline-github nil
-        doom-modeline-mu4e nil
-        doom-modeline-persp-name nil
-        doom-modeline-minor-modes nil
-        doom-modeline-major-mode-icon nil
-        doom-modeline-buffer-file-name-style 'relative-from-project
-        ;; Only show file encoding if it's non-UTF-8 and different line endings
-        ;; than the current OSes preference
-        doom-modeline-buffer-encoding 'nondefault
-        doom-modeline-default-eol-type
-        (cond (IS-MAC 2)
-              (IS-WINDOWS 1)
-              (0)))
-
-  ;; Fix modeline icons in daemon-spawned graphical frames. We have our own
-  ;; mechanism for disabling all-the-icons, so we don't need doom-modeline to do
-  ;; it for us. However, this may cause unwanted padding in the modeline in
-  ;; daemon-spawned terminal frames. If it bothers you, you may prefer
-  ;; `doom-modeline-icon' set to `nil'.
-  (when (daemonp)
-    (setq doom-modeline-icon t))
-  :config
-  ;; HACK Fix #4102 due to empty all-the-icons return value (caused by
-  ;;      `doom--disable-all-the-icons-in-tty-a' advice) in tty daemon frames.
-  (defadvice! +modeline-disable-icon-in-daemon-a (orig-fn &rest args)
-    :around #'doom-modeline-propertize-icon
-    (when (display-graphic-p)
-      (apply orig-fn args)))
-
-  ;; Fix an issue where these two variables aren't defined in TTY Emacs on MacOS
-  (defvar mouse-wheel-down-event nil)
-  (defvar mouse-wheel-up-event nil)
-
-  (add-hook 'after-setting-font-hook #'+modeline-resize-for-font-h)
-  (add-hook 'doom-load-theme-hook #'doom-modeline-refresh-bars)
-
-  (add-hook '+doom-dashboard-mode-hook #'doom-modeline-set-project-modeline)
-
-  (add-hook! 'magit-mode-hook
-    (defun +modeline-hide-in-non-status-buffer-h ()
-      "Show minimal modeline in magit-status buffer, no modeline elsewhere."
-      (if (eq major-mode 'magit-status-mode)
-          (doom-modeline-set-vcs-modeline)
-        (hide-mode-line-mode))))
-
-  ;; Some functions modify the buffer, causing the modeline to show a false
-  ;; modified state, so force them to behave.
-  (defadvice! +modeline--inhibit-modification-hooks-a (orig-fn &rest args)
-    :around #'ws-butler-after-save
-    (with-silent-modifications (apply orig-fn args))))
-#+end_src
-
-#+begin_src emacs-lisp :tangle no
-(defun doom-modeline--set-char-widths (alist)
-  "Set correct widths of icons characters in ALIST."
-  (while (char-table-parent char-width-table)
-    (setq char-width-table (char-table-parent char-width-table)))
-  (dolist (pair alist)
-    (let ((width 1)
-          (chars (cdr pair))
-          (table (make-char-table nil)))
-      (dolist (char chars)
-        (set-char-table-range table char width))
-      (optimize-char-table table)
-      (set-char-table-parent table char-width-table)
-      (setq char-width-table table))))
-
-#+end_src
 *** Doom-modeline settings
 
 #+begin_src elisp :tangle yes
@@ -296,129 +166,60 @@ Trying to make my own thing work
     '(buffer-position misc-info major-mode)))
 #+end_src
 
-*** Mlscroll
-
-    Very cool indicator of where you are in the buffer. Works not that well with `doom-modeline` though.
-
-#+begin_src emacs-lisp :tangle no
-(use-package! mlscroll
-  :preface
-  ;(setq mlscroll-mode-line-font-width 9)
-  :init
-  (message "Init mode line %s" 'mode-line)
-  (setq mlscroll-right-align nil)
-  (add-to-list 'mode-line-misc-info '(:eval (mlscroll-mode-line)) 'append)
-  (setq mlscroll-width-chars 15)
-  (setq mlscroll-border 6)
-  (setq mlscroll-in-color "#555555")
-  ;(setq mlscroll-mode-line-font-width 9)
-  :config
-  (mlscroll-mode 1)
-  ;(setq mlscroll-mode-line-font-with 9)
-  )
-#+end_src
-
-
-
-** Startup
-
-   #+begin_src emacs-lisp :tangle no
-(use-package! dashboard
-  :init
-  (dashboard-setup-startup-hook)
-  ;(setq initial-buffer-choice
-  ;      (lambda () (get-buffer "*dashboard*")))
-  :config
-  (setq dashboard-center-content t
-        dashboard-banner-logo-title "Emacs"
-        dashboard-startup-banner 'logo
-        dashboard-set-file-icons t
-        dashboard-set-heading-icons t
-        dashboard-set-init-info t
-        dashboard-week-agenda t
-        ))
-   #+end_src
-
 ** Centaur tabs
 
 Love me some tabs, but the doom defaults could be better.
+
+Better label function: org-roams timestamp in front of the file is nice, but not very legible.
+
+#+begin_src emacs-lisp :tangle yes
+(defun thomas/centaur-tabs-buffer-tab-label (tab)
+  "Return a label for TAB.
+That is, a string used to represent it on the tab bar."
+  ;; Init tab style.
+  ;; Render tab.
+  (format " %s"
+          (let* ((rawbufname (if centaur-tabs--buffer-show-groups
+                             (centaur-tabs-tab-tabset tab)
+                           (buffer-name (car tab))))
+                (formatted-bufname (if (string= (file-name-extension rawbufname) "org")
+                             (if (and (> (length rawbufname) 14)
+                                      (string-match-p "[0-9]\\{14\\}" (substring rawbufname 0 14)))
+                                 (substring rawbufname 15)
+                               rawbufname)
+                           rawbufname))
+                (bufname (concat "  " formatted-bufname)))
+            (if (> centaur-tabs-label-fixed-length 0)
+                (centaur-tabs-truncate-string  centaur-tabs-label-fixed-length bufname)
+              bufname))))
+#+end_src
+
 #+begin_src emacs-lisp :tangle yes
 (after! centaur-tabs
-  (setq centaur-tabs-style "wave"))
+  (setq centaur-tabs-display-line nil)
+  (setq centaur-tabs-style "bar"
+        centaur-tabs-tab-label-function #'thomas/centaur-tabs-buffer-tab-label
+        centaur-tabs-label-fixed-length 20
+        centaur-tabs-height 40
+        centaur-tabs-bar-height 50
+        centaur-tabs-close-button "✕"
+        centaur-tabs-icon-scale-factor 0.8)
+  (centaur-tabs-change-fonts "Roboto Sans" 140)
+(set-face-background 'centaur-tabs-selected (doom-lighten (face-background 'default )0.1))
+(set-face-background 'centaur-tabs-selected-modified (doom-lighten (face-background 'default )0.1)))
 #+end_src
 
-** Ivy
-The Doom defaults are nice, but I really dislike that  the size of the posframe keeps changing.
-Also I want it to be on top and with some margin, which requires some extra config
-#+begin_src emacs-lisp :tangle no
-(defvar ivy-posframewidth 120)
-(setq ivy-posframe-width
-  (round (* 0.6 (frame-width))))
+#+begin_src emacs-lisp :tangle yes
 
-;; Please just keep the width fixed
-(defun set-ivy-posframe-width ()
-  (progn
-(setq ivy-posframe-width
-  (round (* 0.6 (frame-width))))
-(setq      ivy-posframe-parameters
-        `((min-width . 90)
-          (width . ,ivy-posframe-width)
-          (height . ,ivy-height)
-          ))))
-
-(defun posframe-poshandler-frame-top-center-margin (info)
-  "Posframe's position handler.
-Get a position which let posframe stay onto its
-parent-frame's top center.  The structure of INFO can
-be found in docstring of `posframe-show'."
-  (cons (/ (- (plist-get info :parent-frame-width)
-              (plist-get info :posframe-width))
-           2)
-        100))
-
-(defun thomas/ivy-posframe-display-at-frame-top-center (str)
-  (ivy-posframe--display str #'posframe-poshandler-frame-top-center-margin))
-
-
-(use-package! ivy-posframe
-  :hook (ivy-mode . ivy-posframe-mode)
-  :config
-  (add-hook! 'ivy-posframe-hook #'set-ivy-posframe-width)
-  (setq ivy-fixed-height-minibuffer nil
-        ivy-posframe-display-functions-alist '((t . thomas/ivy-posframe-display-at-frame-top-center))
-        ivy-posframe-border-width 2
-        ivy-posframe-parameters
-        `((min-width . 90)
-          (width . ,ivy-posframe-width)
-          (min-height . ,ivy-height)
-          (height . ,ivy-height)
-          ))
-
-  ;; default to posframe display function
-  ;(setf (alist-get t ivy-posframe-display-functions-alist)
-  ;      #'+ivy-display-at-frame-center-near-bottom-fn)
-
-
-  ;; posframe doesn't work well with async sources (the posframe will
-  ;; occasionally stop responding/redrawing), and causes violent resizing of the
-  ;; posframe.
-  (dolist (fn '(swiper counsel-rg counsel-grep counsel-git-grep))
-    (setf (alist-get fn ivy-posframe-display-functions-alist)
-          #'ivy-display-function-fallback))
-
-  (add-hook 'doom-after-reload-hook #'posframe-delete-all))
 #+end_src
-
-* Org-Mode customization
+* Org-Mode
 
 
 Allows you to jump in and out of latex fragments without using `C-c C-x C-l` all the time, beautiful.
 #+begin_src emacs-lisp :tangle yes
 (use-package! org-fragtog
   :after org
-  :hook (org-mode . org-fragtog-mode)
-  )
-
+  :hook (org-mode . org-fragtog-mode))
 #+end_src
 
 Org-appear for everything else.
@@ -430,20 +231,16 @@ Org-appear for everything else.
            org-appear-autolinks t
            org-appear-autoentities t
            org-appear-autosubmarkers t ))
-
-
 #+end_src
 
 Buggy yet beautiful transclusion of org-content from another file in the current buffer. Very cool that this is possible, but I don't use it consistently as the "code" is kind of a bitch to write and gets rid of org-roam links.
 #+begin_src emacs-lisp :tangle yes
 (use-package! org-transclusion
-  :after org-roam
-  )
+  :after org-roam)
 #+end_src
 
 Having zero-width spaces can be very useful /sometimes/​!
 #+begin_src emacs-lisp :tangle yes
-
 (map! :map org-mode-map
 :nie "C-M-SPC" (cmd! (insert "\u200B")))
 #+end_src
@@ -467,6 +264,7 @@ Fantastic package which allows you to backlink etc.
  #+end_src
 
 *** Hotter Buffer
+
 #+begin_src emacs-lisp :tangle yes
 (defun org-roam-buffer-setup ()
   "Function to make org-roam-buffer more pretty."
@@ -474,108 +272,85 @@ Fantastic package which allows you to backlink etc.
     (setq-local olivetti-body-width 44)
     (variable-pitch-mode 1)
     (olivetti-mode 1)
-    (centaur-tabs-local-mode -1)
+    (centaur-tabs-local-mode 1)
 
   (set-face-background 'magit-section-highlight (face-background 'default))))
 
+;; I don't actually like the buffer that much
 (after! org-roam
+  (setq +org-roam-open-buffer-on-find-file nil)
 (add-hook! 'org-roam-mode-hook #'org-roam-buffer-setup))
 #+end_src
-*** Org-Roam-UI
-My baby
 
+*** Org-Roam-UI
+
+My baby
+It's of course fantastic so I don't need a lot of setup.
 #+begin_src emacs-lisp :tangle yes
 (use-package! org-roam-ui
   :after org-roam
   :config
-  (setq org-roam-ui-open-on-start nil)
-  (setq org-roam-ui-browser-function #'xwidget-webkit-browse-url))
+    (setq org-roam-ui-open-on-start nil)
+    (setq org-roam-ui-browser-function #'xwidget-webkit-browse-url))
 #+end_src
 
 
 *** Org-roam-capture templates
-
 #+begin_src emacs-lisp :tangle yes
 (after! org-roam
     (setq org-roam-capture-templates
           `(("s" "standard" plain "%?"
-     :if-new
-     (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
-      "#+title: ${title}\n#+filetags: \n\n ")
-     :unnarrowed t)
-        ("d" "definition" plain
-         "%?"
-         :if-new
-         (file+head "${slug}.org" "#+title: ${title}\n#+filetags: definition \n\n* Definition\n\n\n* Examples\n")
-         :unnarrowed t)
-        ("r" "ref" plain "%?"
-           :if-new
-           (file+head "${citekey}.org"
-           "#+title: ${slug}: ${title}\n
+             :if-new
+             (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
+                        "#+title: ${title}\n#+filetags: \n\n ")
+             :unnarrowed t)
+            ("d" "definition" plain
+             "%?"
+             :if-new
+             (file+head "${slug}.org" "#+title: ${title}\n#+filetags: definition \n\n* Definition\n\n\n* Examples\n")
+             :unnarrowed t)
+            ("r" "ref" plain "%?"
+             :if-new
+             (file+head "${citekey}.org"
+                        "#+title: ${slug}: ${title}\n
 \n#+filetags: reference ${keywords} \n
 \n* ${title}\n\n
 \n* Summary
 \n\n\n* Rough note space\n")
-           :unnarrowed t)
-          ("p" "person" plain "%?"
-           :if-new
-           (file+head "${slug}.org" "%^{relation|some guy|family|friend|colleague}p %^{birthday}p %^{address}p
+             :unnarrowed t)
+            ("p" "person" plain "%?"
+             :if-new
+             (file+head "${slug}.org" "%^{relation|some guy|family|friend|colleague}p %^{birthday}p %^{address}p
 ,#+title:${slug}\n#+filetags: :person: \n"
-                      :unnarrowed t)))))
+                        :unnarrowed t)
+             ("ts" "standard (thesis)" plain "%?"
+              :if-new
+              (file+head "thesis/%<%Y%m%d%H%M%S>-${slug}.org"
+                         "#+title: ${title}\n#+filetags: \n\n ")
+              :unnarrowed t)
+             ("tc" "chapter (thesis)" plain "%?"
+              :if-new
+              (file+head "thesis/${slug}.org"
+                         "#+title: ${title}\n#+filetags: :chapter: \n\n
+\n - Outline (do this first)\n  -")
+              :unnarrowed t)
+             ("td" "definition (thesis)" plain
+              "%?"
+              :if-new
+              (file+head "$thesis/{slug}.org" "#+title: ${title}\n#+filetags:     definition \n\n* Definition\n\n\n* Examples\n")
+              :unnarrowed t)
+             ("tr" "ref (thesis)" plain "%?"
+              :if-new
+              (file+head "$thesis/{citekey}.org"
+                         "#+title: ${slug}: ${title}\n
+\n#+filetags: reference ${keywords} \n
+\n* ${title}\n\n
+\n* Summary
+\n\n\n* Rough note space\n")
+              :unnarrowed t)))))
 
 #+end_src
 
-*** Server
-**** Protocol
-#+begin_src emacs-lisp :tangle no
-
-;; Since the org module lazy loads org-protocol (waits until an org URL is
-;; detected), we can safely chain `org-roam-protocol' to it.
-(use-package! org-roam-protocol
-  :after org-protocol)
-#+end_src
-
-**** Actual server
-#+begin_src emacs-lisp :tangle no
-
-(use-package! org-roam-server
-  :after org-roam
-  :config
-  (setq org-roam-server-host "127.0.0.1"
-        org-roam-server-port 8081
-        org-roam-server-authenticate nil
-        org-roam-server-export-inline-images t
-        org-roam-server-serve-files nil
-        org-roam-server-served-file-extensions '("pdf" "mp4" "ogv")
-        org-roam-server-network-poll t
-        org-roam-server-network-arrows nil
-        org-roam-server-network-label-truncate t
-        org-roam-server-network-label-truncate-length 60
-        org-roam-server-network-label-wrap-length 20
-        org-roam-server-network-vis-options "{\"physics\": {\"stabilization\": {\"iterations\": 100}}}"
-        ;i;"{\"physics\": {\"enabled\": true, \"barnesHut\":{\"gravitationalConstant\" : -6000, \"avoidOverlap\" : 0.5, \"springLength\" : 200}, \"stabilization\": {\"enabled\": true, \"iterations\": 30}},
-        ;;\"edges\": {\"physics\": true, \"hidden\": false, \"smooth\": {\"enabled\": false, \"type\": \"continuous\"}}}"
-        org-roam-server-cite-edge-dashes nil
-        org-roam-server-extra-cite-edge-options (list (cons 'width 3))
-        ))
-#+end_src
-
-Org-roam server does not really work well with with `smart-parens` for some reason, this fixes that.
-#+begin_src emacs-lisp :tangle no
-(defun org-roam-server-open ()
-    "Ensure the server is active, then open the roam graph."
-    (interactive)
-    (smartparens-global-mode -1)
-    (org-roam-server-mode 1)
-    (browse-url-xdg-open (format "http://localhost:%d" org-roam-server-port))
-    (smartparens-global-mode 1))
-
-;; automatically enable server-mode
-(after! org-roam
-  (smartparens-global-mode -1)
-  (org-roam-server-mode)
-  (smartparens-global-mode 1))
-#+end_src
 
 *** Citations
 #+begin_src emacs-lisp :tangle yes
@@ -585,24 +360,24 @@ Org-roam server does not really work well with with `smart-parens` for some reas
     (setq
          org-ref-completion-library 'org-ref-ivy-cite
          org-ref-get-pdf-filename-function 'org-ref-get-pdf-filename-helm-bibtex
-         org-ref-default-bibliography (list "/Users/thomas/OneDrive/org-roam/bib/Library.bib")
-         org-ref-bibliography-notes "/Users/thomas/OneDrive/org-roam/bibnotes.org"
-         org-ref-note-title-format "* %y - %t\n :PROPERTIES:\n  :Custom_ID: %k\n  :NOTER_DOCUMENT: %F\n :ROAM_KEY: cite:%k\n  :AUTHOR: %9a\n  :JOURNAL: %j\n  :YEAR: %y\n  :VOLUME: %v\n  :PAGES: %p\n  :DOI: %D\n  :URL: %U\n :END:\n\n"
-         org-ref-notes-directory "/Users/thomas/OneDrive/org-roam/"
+         org-ref-default-bibliography (list "/Users/thomas/Notes/bib/Library.bib")
+         org-ref-bibliography-notes "/Users/thomas/Notes/bibnotes.org"
+         org-ref-note-title-format "* %y - %t\n :properties:\n  :Custom_ID: %k\n  :noter_document: %F\n :ROAM_KEY: cite:%k\n  :AUTHOR: %9a\n  :JOURNAL: %j\n  :YEAR: %y\n  :VOLUME: %v\n  :PAGES: %p\n  :DOI: %D\n  :URL: %U\n :END:\n\n"
+         org-ref-notes-directory "/Users/thomas/Notes/"
          org-ref-notes-function 'orb-edit-notes
     ))
 
 (after! org-ref
 (setq
- bibtex-completion-notes-path "/Users/thomas/OneDrive/org-roam/"
- bibtex-completion-bibliography "/Users/thomas/OneDrive/org-roam/bib/Library.bib"
+ bibtex-completion-notes-path "/Users/thomas/Notes/"
+ bibtex-completion-bibliography "/Users/thomas/Notes/bib/Library.bib"
  bibtex-completion-pdf-field "file"
  bibtex-completion-notes-template-multiple-files
  (concat
   "#+TITLE: ${title}\n"
   "#+ROAM_KEY: cite:${=key=}\n"
   "* TODO Notes\n"
-  ":PROPERTIES:\n"
+  ":properties:\n"
   ":Custom_ID: ${=key=}\n"
   ":NOTER_DOCUMENT: %(orb-process-file-field \"${=key=}\")\n"
   ":AUTHOR: ${author-abbrev}\n"
@@ -618,18 +393,10 @@ Org-roam server does not really work well with with `smart-parens` for some reas
 
 #+end_src
 
-Company-org-roam seemed like a good idea, but I never use it.
-
-#+begin_src emacs-lisp :tangle no
-        (use-package! company-org-roam
-  :after org-roam
-  :config
-  (set-company-backend! 'org-mode '(company-org-roam company-yasnippet company-dabbrev)))
-#+end_src
 
 ORB
-#+begin_src emacs-lisp :tangle yes
 
+#+begin_src emacs-lisp :tangle yes
 (use-package! org-roam-bibtex
   :after org-roam
   :hook (org-mode . org-roam-bibtex-mode)
@@ -640,9 +407,117 @@ ORB
 ;)
 #+end_src
 
+*** Citar
+
+#+begin_src emacs-lisp :tangle yes
+(use-package! citar
+  :after org-roam
+  :config
+  (setq
+  org-cite-global-bibliography '("~/Notes/thesis-writing/bibliography/Academic.bib")
+  citar-bibliography org-cite-global-bibliography
+  org-cite-insert-processor 'citar
+  org-cite-follow-processor 'citar
+  org-cite-activate-processor 'citar
+  citar-templates
+      '((main . "${author editor:30}     ${date year issued:4}     ${title:48}")
+        (suffix . "          ${=key= id:15}    ${=type=:12}    ${tags keywords:*}")
+        (note . "Notes on ${author editor}, ${title}"))
+  citar-symbols
+      `((file ,(all-the-icons-faicon "file-o" :face 'all-the-icons-green :v-adjust -0.1) . " ")
+        (note ,(all-the-icons-material "speaker_notes" :face 'all-the-icons-blue :v-adjust -0.3) . " ")
+        (link ,(all-the-icons-octicon "link" :face 'all-the-icons-orange :v-adjust 0.01) . " "))
+citar-symbol-separator "  "
+citar-open-note-function 'orb-citar-edit-note
+bibtex-completion-bibliography org-cite-global-bibliography
+citar-format-note-function 'orb--new-note
+org-cite-export-processors '((latex biblatex)
+                             (t basic)))
+
+  ;; optional: org-cite-insert is also bound to C-c C-x C-@
+  :bind
+  (:map org-mode-map :package org ("C-c b" . #'org-cite-insert)))
+#+end_src
+
+biblatex
+
+#+begin_src emacs-lisp :tangle yes
+(use-package! oc-biblatex
+  :after oc)
+#+end_src
+
+
+**** Convert org-ref to org-cite (from Tecosaur)
+#+begin_src emacs-lisp :tangle yes
+(after! oc
+  (defun org-ref-to-org-cite ()
+    "Attempt to convert org-ref citations to org-cite syntax."
+    (interactive)
+    (let* ((cite-conversions '(("cite" . "//b") ("Cite" . "//bc")
+                               ("nocite" . "/n")
+                               ("citep" . "") ("citep*" . "//f")
+                               ("parencite" . "") ("Parencite" . "//c")
+                               ("citeauthor" . "/a/f") ("citeauthor*" . "/a")
+                               ("citeyear" . "/na/b")
+                               ("Citep" . "//c") ("Citealp" . "//bc")
+                               ("Citeauthor" . "/a/cf") ("Citeauthor*" . "/a/c")
+                               ("autocite" . "") ("Autocite" . "//c")
+                               ("notecite" . "/l/b") ("Notecite" . "/l/bc")
+                               ("pnotecite" . "/l") ("Pnotecite" . "/l/bc")))
+           (cite-regexp (rx (regexp (regexp-opt (mapcar #'car cite-conversions) t))
+                            ":" (group (+ (not (any "\n     ,.)]}")))))))
+      (save-excursion
+        (goto-char (point-min))
+        (while (re-search-forward cite-regexp nil t)
+          (message (format "[cite%s:@%s]"
+                                 (cdr (assoc (match-string 1) cite-conversions))
+                                 (match-string 2)))
+          (replace-match (format "[cite%s:@%s]"
+                                 (cdr (assoc (match-string 1) cite-conversions))
+                                 (match-string 2))))))))
+#+end_src
+*** Custom functions
+
+#+begin_src emacs-lisp :tangle yes
+(defun org-roam-rg-search ()
+  "Search org-roam directory using consult-ripgrep. With live-preview."
+  (interactive)
+  (let ((consult-ripgrep-args "rg --null --ignore-case --type org --line-buffered --max-columns=500 --no-heading --line-number --context 2 . "))
+    (consult-ripgrep org-roam-directory)))
+;(global-set-key (kbd "C-c rr") 'bms/org-roam-rg-search)
+#+end_src
+
+Some other rg
+
+#+begin_src emacs-lisp :tangle yes
+(after! consult
+  (setq consult-ripgrep-args
+  "rg --null --line-buffered --color=never --max-columns=1000 --path-separator /\
+   --smart-case --no-heading --line-number --context=3 ."
+))
+#+end_src
 ** To do things with pdfs with
 
-   Don't really use this anymore since zotero got a pdf reader
+
+*** Zotero integrations
+
+   Speaking of which: the note taking functionality in Zotero is very nice, but I want to copy it to org. This function prettifies that
+
+
+#+begin_src emacs-lisp :tangle yes
+(defun zotnote-to-org ()
+  (interactive)
+  (progn
+    (save-excursion
+  (replace-string "\\par" "\n"))
+    (save-excursion
+  (replace-string "“" "#+begin_quote\n/"))
+    (save-excursion
+  (replace-string "”" "/\n#+end_quote\n\n"))
+    (save-buffer)))
+#+end_src
+
+*** Old org-noter
 #+begin_src emacs-lisp :tangle no
    (use-package! org-noter
   :after (:any org pdf-view)
@@ -655,7 +530,7 @@ ORB
    ;; I want to see the whole file
    org-noter-hide-other nil
    ;; Everything is relative to the rclone mega
-   org-noter-notes-search-path "/Users/thomas/OneDrive/org-roam"
+   org-noter-notes-search-path "/Users/thomas/Notes"
    )
   )
 
@@ -684,7 +559,7 @@ nroam puts the org-roam buffer on the bottom, much more natural and less obstrus
 
 *** Org-ol
 
-    Outliners on the side, neat.
+Outliners on the side, neat.
 
 #+begin_src emacs-lisp :tangle yes
 (use-package! org-ol-tree
@@ -693,13 +568,14 @@ nroam puts the org-roam buffer on the bottom, much more natural and less obstrus
   :hook (org-ol-tree-mode . visual-line-mode)
   :config
   (setq org-ol-tree-ui-window-auto-resize nil
-        org-ol-tree-ui-window-max-width 0.3
-        org-ol-tree-ui-window-position 'left))
+        org-ol-tree-ui-window-max-width 0.3))
+(add-hook! 'org-ol-tree-mode-hook (lambda () (when (centaur-tabs-mode) (centaur-tabs-local-mode -1))))
 (map! :map org-mode-map
       :after org
       :localleader
       :desc "Outline" "O" #'org-ol-tree)
 #+end_src
+
 ** Hooks
 
 *** Hook to get rid of stars
@@ -720,7 +596,9 @@ No but when I'm writing I don't want org's usual indentation and stars and all t
 (add-hook! 'org-mode-hook #'org-mode-remove-stars)
 #+end_src
 
-*** Yeah I don't know where to put this
+
+*** Setup very pretty org-mode
+
 #+begin_src emacs-lisp :tangle yes
   ;; hide title / author ... keywords
 
@@ -745,7 +623,7 @@ No but when I'm writing I don't want org's usual indentation and stars and all t
 
 fuckin latex
 For some reason it can't find the dang latex executable, so we're just adding the path to it by hand like some sort of caveman
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp :tangle no
 (setq org-preview-latex-process-alist
   '((dvipng
      :programs ("/Library/TeX/texbin/latex" "/Library/TeX/texbin/dvipng")
@@ -776,12 +654,14 @@ For some reason it can't find the dang latex executable, so we're just adding th
      :image-converter
      ("convert -density %D -trim -antialias %f -quality 100 %O"))))
 #+end_src
+
+
 #+begin_src emacs-lisp :tangle yes
 (after! org
-  (setq org-startup-with-latex-preview 1 ;always preview latex
-        org-latex-create-formula-image-program 'dvipng
-        LaTeX-command "/Library/TeX/texbin/latex"
-        latex-run-command "/Library/TeX/texbin/latex"
+  (setq org-startup-with-latex-preview nil ;don't preview latex
+        ;org-latex-create-formula-image-program 'dvipng
+        ;LaTeX-command "latex"
+        ;latex-run-command "latex"
         org-startup-with-inline-images 1 ;always preview images
         ;org-hide-leading-stars 1
         org-startup-indented nil         ; don't indent
@@ -817,6 +697,7 @@ Sometimes I want to move a tree to an indirect buffer, but sometimes I want to p
   (interactive)
   (+org-tree-to-indirect-buffer-options 'dedicated-frame))
 #+end_src
+
 *** Custom faces
 
 A lil bigger. No a lil smaller. Peeerrrfect.
@@ -830,6 +711,8 @@ A lil bigger. No a lil smaller. Peeerrrfect.
       :foreground "red"))
     "Red."
     :group 'basic-faces)
+
+  (set-face-font 'org-quote (font-spec :family "Noto Serif"))
   (custom-set-faces!
     ;'(org-document-title :height 1.6 :weight bold)
     '(org-level-1 :height 1.3 :weight extrabold :slant normal)
@@ -841,6 +724,7 @@ A lil bigger. No a lil smaller. Peeerrrfect.
                            :height 250
                            :weight medium)))
 #+end_src
+
 *** Emphasis faces
 
 I want to be able to do some kind of custom highlighting, so = becomes =red=.
@@ -859,7 +743,8 @@ Ideally I would be able to add my own custom bullshit in here, but I don't know 
 
 *** Ligatures
 
-    Yns  make them pretty
+Yes  make them pretty
+
 #+begin_src emacs-lisp :tangle yes
         (after! org
 (setq org-ellipsis " ▾ ")
@@ -872,7 +757,7 @@ Ideally I would be able to add my own custom bullshit in here, but I don't know 
             :ellipses      "…"
             :arrow_right   "→"
             :arrow_left    "←"
-            :title         nil
+            :title         ""
             :subtitle      "𝙩"
             :author        "𝘼"
             :date          "𝘿"
@@ -904,7 +789,7 @@ Ideally I would be able to add my own custom bullshit in here, but I don't know 
             :priority_d   ,(propertize "⬇" 'face 'all-the-icons-green)
             :priority_e   ,(propertize "❓" 'face 'all-the-icons-blue)
             :roam_tags nil
-            :filetags nil))
+            :filetags ""))
 (set-ligatures! 'org-mode
   :merge t
   :checkbox      "[ ]"
@@ -947,7 +832,9 @@ Ideally I would be able to add my own custom bullshit in here, but I don't know 
   :priority_d    "[#D]"
   :priority_e    "[#E]"
   :roam_tags     "#+roam_tags:"
-  :filetags      "#+filetags:")
+ ;; :filetags      "#+filetags:"
+  :something     "#+filetags:"
+  :filetags      "#+FILETAGS:")
 (plist-put +ligatures-extra-symbols :name "⁍")
 )
 
@@ -956,17 +843,40 @@ Ideally I would be able to add my own custom bullshit in here, but I don't know 
 
 #+end_src
 
-** Getting Things Done
+** Getting Things Done/Agenda
 
-   Oh yeah this is definitely working for me I've definitely changed as a person.
+Oh yeah this is definitely working for me I've definitely changed as a person.
+
+*** Agenda
+I kind of like the /idea/ of org-agenda, but it requires way too much manual intervention in order to be useable.
+That's why I mostly use it outside of org-mode, and for that CalDAV is what you want.
+#+begin_src emacs-lisp :tangle yes
+(use-package! org-caldav
+  :after org
+  :config (setq org-caldav-url "https://use03.thegood.cloud/remote.php/dav/calendars/hello@tefkah.com"
+                org-caldav-calendar-id "personal"
+                org-caldav-inbox "/Users/thomas/Notes/GTD/calendar.org"
+                org-caldav-files '("/Users/thomas/Notes/GTD/calendar.org")
+                org-caldav-sync-changes-to-org 'all
+                org-icalendar-alarm-time 20
+                org-icalendar-use-deadline '(event-if-not-todo todo-due)
+                org-icalendar-use-scheduled '(event-if-not-todo)
+                org-icalendar-include-todo 'all
+                org-caldav-sync-todo t
+                org-icalendar-categories '(local-tags)
+                org-icalendar-timezone "Europe/Amsterdam"))
+#+end_src
+
+
 *** GTD package
-    It's pretty good, but it doesn't do my organizing for me sadly.
+
+It's pretty good, but it doesn't do my organizing for me sadly.
   #+begin_src emacs-lisp :tangle yes
 (use-package! org-gtd
   :after org
   :config
   ;; where org-gtd will put its files. This value is also the default one.
-  (setq org-gtd-directory "~/OneDrive/org-roam/")
+  (setq org-gtd-directory "~/Notes/")
   ;; package: https://github.com/Malabarba/org-agenda-property
   ;; this is so you can see who an item was delegated to in the agenda
   (setq org-agenda-property-list '("DELEGATED_TO"))
@@ -991,9 +901,9 @@ Ideally I would be able to add my own custom bullshit in here, but I don't know 
 Because you can't trust ~custom.el~
 #+begin_src emacs-lisp :tangle yes
 
-(setq org-agenda-files '("~/OneDrive/org-roam/inbox" "~/OneDrive/org-roam/actionable.org"
-                         "~/OneDrive/org-roam/agenda.org" "~/OneDrive/org-roam/incubate.org"
-                         "~/OneDrive/org-roam/openquestions.org"))
+(setq org-agenda-files '("~/Notes/inbox" "~/Notes/actionable.org"
+                         "~/Notes/agenda.org" "~/Notes/incubate.org"
+                         "~/Notes/openquestions.org"))
 #+end_src
 
 *** Org capture Templates
@@ -1002,22 +912,24 @@ Set some capture templates, which I rarely use tbrqhwy
 #+begin_src emacs-lisp :tangle yes
 (after! org
 (setq org-capture-templates `(("i" "Inbox"
-                                 entry (file "~/OneDrive/org-roam/inbox.org")
-                                 "* %?\n%U\n\n  %i"
+                                 entry (file "~/Notes/GTD/calendar.org")
+                                 "* TODO %?\n%U\n\n  %i"
                                  :kill-buffer t)
                                 ("l" "Todo with link"
                                  entry (file "~/OneDrive/org-rom/inbox.org")
                                  "* %?\n%U\n\n  %i\n  %a"
                                  :kill-buffer t)
                                 ("m" "Meeting"
-                                 entry (file+headline "/Users/thomas/OneDrive/org-roam/agenda.org" "Future")
-                                ,(concat "* TODO %? :meeting:\n" "<%<%Y-%m-%d %a %H:00>>"))
+                                 entry (file+headline "/Users/thomas/Notes/GTD/calendar.org" "Future")
+                                ,(concat "* %? :meeting:\n" "<%<%Y-%m-%d %a %H:00>>")
+                                :kill-buffer t)
                                 ("o" "Open Question Thesis"
-                                 entry (file+headline "~/OneDrive/org-roam/openquestions.org" "Questions")
+                                 entry (file+headline "~/Notes/openquestions.org" "Questions")
                                  "* OPEN %? \n %U\n")))
 (set-face-attribute 'org-headline-done nil :strike-through t)
 )
 #+end_src
+
 *** Org-super agenda
 
 Why yes, I also copied this one example from the ~org-super-agenda~ github, how could you tell?
@@ -1100,13 +1012,18 @@ This does not work nearly as well as I would like it to, like, utility wise. Way
 
 I want notifications to work so bad but it just isn't working :(
 Seems like ~alert~ is not working, should fix that at some point.
+
 #+begin_src emacs-lisp :tangle no
 (use-package! org-notifications
   :init (org-notifications-start) )
 #+end_src
 
 ** Nice writing environment for big babies
+
+Just because I use emacs doesn't mean I don't want things to look a e s t h e t i c
+*** Frame parameters
 Nice big border with the color of the fringe
+
 #+begin_src emacs-lisp :tangle yes
 (setq default-frame-alist
       (append (list
@@ -1126,6 +1043,7 @@ Nice big border with the color of the fringe
 #+end_src
 
 *** Paper-like header/mode-line
+
 Lil' minor mode which gives you a nice distraction free header and footer. At the moment its automatically enabled in org-mode, but I would like it to only be enabled in "writing" buffers, not sure how to implement that yet though.
 
 #+begin_src emacs-lisp :tangle yes
@@ -1240,6 +1158,7 @@ Imitates the look of wordprocessors a bit."
   "outer"
   :type 'integer)
 #+end_src
+
 #+begin_src emacs-lisp :tangle yes
 (after! org
         (require 'svg))
@@ -1485,6 +1404,7 @@ This basically sets up the structure for how I want the minor-mode to work. It's
 
 Big problem with visual line approach is that you cannot scale past a certain point, only until the margins run out, when it suddenly scaling becomes bigger font size.
 I need to make this work with olivetti mode better, or if necessary implement it myself. Don't really want to do that though, would rather rely on olivetti mode.
+
  #+begin_src emacs-lisp :tangle no
 ;; custom pagebreakinterval
 (defcustom pagebreakinterval 40)
@@ -1596,14 +1516,14 @@ I want thing to be in the middle, and  with olivetti mode the fringes become lar
   ;:hook (olivetti-mode . double-header-line-mode)
   :config
     (setq olivetti-min-body-width 50
-          olivetti-body-width 80
+          olivetti-body-width 68
           olivetti-style 'fancy ; fantastic new layout
           olivetti-margin-width 12)
     (add-hook! 'olivetti-mode-hook (window-divider-mode -1))
     (add-hook! 'olivetti-mode-hook (set-face-attribute 'window-divider nil :foreground (face-background 'fringe) :background (face-background 'fringe)))
-    (add-hook! 'olivetti-mode-hook (set-face-attribute 'vertical-border nil :foreground (face-background 'fringe) :background (face-background 'fringe)))
-    )
+    (add-hook! 'olivetti-mode-hook (set-face-attribute 'vertical-border nil :foreground (face-background 'fringe) :background (face-background 'fringe))))
 #+end_src
+
 *** Trying to get overviews
 #+begin_src emacs-lisp :tangle yes
 (require 'org-inlinetask)
@@ -2023,11 +1943,26 @@ My eternal enemy
 ** Compilation
 I almost always want to fuck around with the fonts, so XeTeX is pretty much necessary. Although I would really like to learn LuaTex, I just haven't really seen any cool usecases of it.
 #+begin_src emacs-lisp :tangle yes
-(add-hook! 'latex-mode-hook (setq TeX-engine 'xetex) 99)
+(add-hook! 'latex-mode-hook (setq TeX-engine 'luatex) 99)
 
     ;  (call-process TeX-shell nil (TeX-process-buffer-name file) nil
      ;               TeX-shell-command-option (concat command file))))
 #+end_src
+
+#+begin_src emacs-lisp :tangle yes
+(after! latex
+(setq
+TeX-view-program-list
+        '(("Evince" "evince --page-index=%(outpage) %o")
+         ("preview-pane" latex-preview-pane-mode)))
+(setq TeX-view-program-selection
+'((output-pdf "Evince")
+ (output-dvi "open")
+ (output-pdf "open")
+ (output-html "open")
+ (output-pdf "preview-pane"))))
+#+end_src
+
 
 #+begin_src emacs-lisp :tangle yes
 (after! latex
@@ -2076,19 +2011,19 @@ Otherwise compile all the .tex files you find using LaTexMK."
 ** Treemacs
 Pretty useful, and looks cool. I almost always want it on, so let's just add a hook for that.
 
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp :tangle no
 (add-hook! 'after-init-hook #'treemacs)
 #+end_src
 
 Get rid of that fugly divider
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp :tangle no
 (after! treemacs
 (add-hook! 'treemacs-mode-hook (setq window-divider-mode -1
                                      variable-pitch-mode 1
                                      treemacs-follow-mode 1))
 )
 #+end_src
-* Programming
+* COMMENT Programming
 ** Regex
 
 Emacs regex sucks. Luckily, there are packages which make this much better, including making changes visual.
@@ -2127,6 +2062,16 @@ LSP auto format is nice, but not as configurable as prettier, better let prettie
   ))
 #+end_src
 
+** Org
+Settings for org-source blocks.
+
+*** JSX
+#+begin_src emacs-lisp :tangle yes
+(after! org
+  (add-to-list 'org-src-lang-modes '("jsx" . rjsx)))
+#+end_src
+
+*** Special editing
 * EVA
 
 The future is here.
@@ -2141,14 +2086,14 @@ The future is here.
         eva-user-birthday "2021-07-16"
         eva-user-short-title "Bruh"
         eva-fallback-to-emacs-idle t)
-      (setq eva--idle-secs-fn #'eva--idle-secs-gnome)
+     ; (setq eva--idle-secs-fn #'eva--idle-secs-gnome)
   (setq eva-idle-log-path         "~/OneDrive/self/data/idle.tsv")
   (setq eva-buffer-focus-log-path "~/OneDrive/self/data/buffer-focus.tsv")
   (setq eva-buffer-info-path      "~/OneDrive/self/data/buffer-info.tsv")
   (setq eva-main-ledger-path      "~/OneDrive/self/journal/finances/l.ledger")
-  (setq eva-main-datetree-path    "~/OneDrive/org-roam/diary.org")
+  (setq eva-main-datetree-path    "~/Notes/diary.org")
   :config
-  (setq org-journal-dir "~/OneDrive/org-roam/journal")
+  (setq org-journal-dir "~/Notes/journal")
     (setq org-journal-file-format "%F.org")
     (require 'eva-builtin)
   (require 'eva-activity)
@@ -2289,18 +2234,18 @@ I just map everything to SPC-r because doom is not using it and r stands for roa
 #+begin_src elisp :tangle yes
 (map! :leader
       (:prefix-map ("r" . "regular")
-       :desc "find file"            "f"   #'org-roam-node-find
+       :desc "edit org-block"       "e"   #'org-edit-special
+       :desc "find note"            "f"   #'org-roam-node-find
        :desc "find ref"             "F"   #'org-roam-ref-find
-       :desc "center scroll"        "s"   #'prot/scroll-center-cursor-mode
-       :desc "start taking notes"   "S"   #'org-noter
+       :desc "sync calendar"        "s"   #'org-caldav-sync
+       :desc "center scroll"        "S"   #'prot/scroll-center-cursor-mode
        :desc "toggle buffer"        "b"   #'org-roam-buffer-toggle
        :desc "insert note"          "i"   #'org-roam-node-insert
-       :desc "server"               "g"   #'org-roam-server
+       :desc "rg search roam"       "g"   #'org-roam-rg-search
        :desc "quit notes"           "q"   #'org-noter-kill-session
        :desc "tag (roam)"           "t"   #'org-roam-tag-add
        :desc "tag (org)"            "T"   #'org-set-tags-command
        :desc "pomodoro"             "p"   #'org-pomodoro
-       :desc "change nano-theme"    "n"   #'nano-toggle-theme
        :desc "rebuid db"            "d"   #'org-roam-db-build-cache
        :desc "cite"                 "c"   #'helm-bibtex
        :desc "thesaurus this word"  "w"  #'powerthesaurus-lookup-word-at-point
@@ -2321,15 +2266,13 @@ I just map everything to SPC-r because doom is not using it and r stands for roa
                 :desc "remove at point"      "r"   #'org-transclusion-remove-at-point
                 :desc "remove all in buffer" "R"   #'org-transclusion-remove-all-in-buffer
                 :desc "start live edit"      "s"   #'org-transclusion-live-sync-start-at-point
-                :desc "stop live edit"       "S"   #'org-transclusion-live-sync-exit-at-point)
-       )
+                :desc "stop live edit"       "S"   #'org-transclusion-live-sync-exit-at-point) )
       (:prefix ("d" . "GTD")
        :desc  "process inbox" "p"#'org-gtd-process-inbox
        :desc  "agenda list" "a"#'org-agenda-list
        :desc  "capture" "c"#'org-gtd-capture
        :desc  "show next" "n" #'org-gtd-show-all-next
-       :desc  "show stuck project" "s" #'org-gtd-show-stuck-projects)
-      )
+       :desc  "show stuck project" "s" #'org-gtd-show-stuck-projects))
 #+end_src
 
 #+RESULTS:
@@ -2436,10 +2379,22 @@ This does not apply them to org-mode, which uses evil-org.el, but those are easi
 
 ** Ivy
 
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp :tangle no
 (use-package! all-the-icons-ivy-rich
   :init (all-the-icons-ivy-rich-mode))
 #+end_src
+
+** Vertico
+
+#+begin_src emacs-lisp :tangle yes
+(use-package! vertico-posframe
+  :after vertico
+  :config (vertico-posframe-mode 1)
+  (setq vertico-posframe-border-width 10
+        vertico-posframe-parameters '((internal-border-width . 10)))
+  (add-hook! 'vertico-posframe-mode-hook (set-face-background 'vertico-posframe-border (face-background 'fringe))))
+#+end_src
+
 ** Markdown
 Add .mdx support
 #+begin_src emacs-lisp :tangle yes

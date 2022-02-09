@@ -1,0 +1,15 @@
+# -*- mode: snippet -*-
+# name: component
+# key: com
+# --
+
+import React from 'react'
+
+export interface $2Props {
+    $1
+}
+
+export const $2 = (props: $2props) => {
+       const {$1} = props
+       return ()
+}

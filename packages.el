@@ -49,6 +49,7 @@
 ;; ...Or *all* packages (NOT RECOMMENDED; will likely break things)
 ;(unpin!;; When using org-roam via the `+roam` flag
 (unpin! org-roam)
+(unpin! consult)
 
 ;; When using bibtex-completion via the `biblio` module
 (unpin! bibtex-completion helm-bibtex ivy-bibtex)
@@ -59,7 +60,6 @@
            :repo "chrisbarrett/evil-workman-mode"
            ))
 
-(package! org-roam :recipe (:host github :repo "org-roam/org-roam" ))
 ;(package! org-roam-server
 ;  :recipe (:local-repo "~/Projects/org-roam-server"
 ;           :files ("*")
@@ -67,7 +67,8 @@
 
 ;(package! org-roam-server)
 (package! ivy-bibtex)
-(package! org-ref)
+(package! org-ref :recipe (:host github :repo "/jkitchin/org-ref" :branch "org-ref-2"))
+(package! citeproc)
 (package! org-roam-bibtex)
 (package! org-super-agenda)
 (package! org-gtd)
@@ -117,6 +118,7 @@
 (package! mu4e-dashboard :recipe (:host github :repo "rougier/mu4e-dashboard"))
 (package! mu4e-thread-folding :recipe (:host github :repo "rougier/mu4e-thread-folding"))
 ;(package! org-agenda :recipe (:host github :repo "rougier/mu4e-thread-folding"))
+(package! org-caldav :recipe (:host github :repo "whirm/org-caldav" :branch "sync-todos"))
 
 (package! dashboard)
 ;(package! pulse-cursor :recipe (:host nil :repo  https://gist.github.com/jasonjckn/0e92c55f1ab0be0947bb613a4706bc33 ))
@@ -150,7 +152,7 @@
 (package! page-break-mode :recipe (:local-repo "~/Projects/emacs/page-break-mode"))
 
 (package! websocket)
-(package! org-roam-ui :recipe (:host github :repo "org-roam/org-roam-ui" :files ("*.el" "out")))
+(package! org-roam-ui )
 (package! devdocs)
 (package! prettier)
 
@@ -158,9 +160,19 @@
     :recipe (:host github :repo "meedstrom/eva"
            :files (:defaults "assets" "renv" "*.R" "*.gnuplot")))
 
-(package! ivy-posframe)
+;;(package! ivy-posframe)
+(package! vertico-posframe :recipe (:host github :repo "tumashu/vertico-posframe"))
 
 
 (package! nano-theme :recipe (:host github :repo "rougier/nano-theme"))
 
-(package! org-roam-timestamps :recipe (:host github :repo "ThomasFKJorna/org-roam-timestamps"))
+(package! org-roam-timestamps )
+
+(package! srefactor)
+
+(package! md-roam :recipe (:host github :repo "nobiot/md-roam"))
+(package! lister)
+(package! delve :recipe (:host github :repo "publicimageltd/delve"))
+(package! company-fuzzy)
+
+(package! citar)

@@ -5,8 +5,15 @@
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
    '("47db50ff66e35d3a440485357fb6acb767c100e135ccdf459060407f8baea7b2" default))
- '(org-agenda-files
-   '("~/OneDrive/org-roam/20210528160149-outline_anyons.org" "~/OneDrive/org-roam/20210528160149-outline_anyons.tmp6aVMYQ.org" "~/OneDrive/org-roam/20210402123014-the_configuration_space_explanation_chapter.org" "~/OneDrive/org-roam/actionable.org" "~/OneDrive/org-roam/agenda.org" "~/OneDrive/org-roam/incubate.org" "~/OneDrive/org-roam/openquestions.org")))
+ '(org-agenda-files '("~/Notes/GTD/calendar.org"))
+ '(safe-local-variable-values
+   '((eval face-remap-add-relative 'org-level-4
+           '(default))
+     (eval face-remap-add-relative 'org-level-3
+           '(face-salient default))
+     (eval face-remap-add-relative 'org-level-2
+           '(face-strong face-salient))
+     (org-html-link-org-files-as-html))))
  
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
