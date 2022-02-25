@@ -55,3 +55,14 @@
 (package! fixed-pitch-mode :recipe (:host github :repo "cstby/fixed-pitch-mode"))
 
 (package! vertico-posframe :recipe (:host github :repo "tumashu/vertico-posframe"))
+
+
+(package! olivetti)
+(package! org-roam-ui)
+(package! org-fragtog)
+(package! org-appear)
+
+(package! info-colors)
+(package! multi-vterm)
+
+(package! org-roam-ui)
