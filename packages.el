@@ -66,3 +66,9 @@
 (package! multi-vterm)
 
 (package! org-roam-ui)
+
+(package! visual-regexp)
+(package! visual-regexp-steroids)
+
+(package! org-modern)
+(package! mixed-pitch)

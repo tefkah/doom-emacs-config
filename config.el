@@ -64,7 +64,9 @@
 
 (setq doom-font "FiraCode Nerd Font")
 (setq doom-variable-pitch-font "Roboto")
-(setq-default default-frame-alist '((font . "Roboto")))
+(setq default-frame-alist '((font . "Roboto")
+                             (internal-border-width 12)
+                             (vertical-scroll-bars nil)))
 
 (vertico-posframe-mode 1)
 
@@ -124,7 +126,61 @@
         centaur-tabs-gray-out-icons 'buffer)
   (centaur-tabs-change-fonts "Roboto" 120))
 
-(setq olivetti-style 'fancy)
+;(setq olivetti-style 'fancy)
 
 (add-hook! 'solaire-mode-hook
   (set-face-attribute 'fringe nil :background (face-background 'solaire-default-face)))
+
+(add-hook! org-mode-hook (company-mode -1))
+
+(setq org-roam-directory "~/Notes")
+(setq org-directory "~/Notes")
+
+(use-package! org-roam-ui
+  :after org-roam)
+
+(setq doom-theme 'doom-flatwhite)
+
+(use-package! olivetti
+  :hook (text-mode . olivetti-mode)
+  :config)
+
+(tooltip-mode 1)
+
+(after! org
+  (setq org-startup-indented nil))
+
+(after! org (setq org-startup-with-latex-preview t))
+
+(use-package! org-modern
+:hook (org-mode . org-modern-mode)
+:config (setq org-modern-hide-stars t))
+
+(add-hook! 'org-mode-hook (mixed-pitch-mode 1))
+
+(defun thomas/check-tag (tag)
+  "Check whether current file-level note has a certain tag."
+  (when (org-roam-file-p)
+  (let* ((file-level-node
+          (save-excursion
+            (org-with-wide-buffer
+            (buffer-end -1)
+            (org-roam-node-at-point))))
+         (file-tags (org-roam-node-tags file-level-node)))
+    (if (seq-contains-p file-tags tag)
+        t
+      nil))))
+
+(defun thomas/check-chapter-note ()
+  "Check if current note is a chapter."
+  (thomas/check-tag "chapter"))
+
+(defun thomas/olivetti-if-chapter ()
+  "Activate olitevetti mode if the current note is a chapter."
+  (when (and (thomas/check-chapter-note))
+    (setq-local olivetti-style 'fancy)
+    (olivetti-mode 1)))
+
+(add-hook 'org-mode-hook #'thomas/olivetti-if-chapter)
+
+(add-hook! 'org-mode-hook (display-line-numbers-mode -1))

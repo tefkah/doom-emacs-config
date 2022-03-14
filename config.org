@@ -62,6 +62,7 @@
 
 
 It would be nice to see the characters when switching windows.
+
 #+BEGIN_SRC elisp :tangle yes
 (custom-set-faces!
   '(aw-leading-char-face
@@ -70,29 +71,37 @@ It would be nice to see the characters when switching windows.
 #+END_SRC
 
 This makes treemacs better or something
+
 #+begin_src elisp :tangle yes
 (setq treemacs-git-mode 'extended)
 #+end_src
 
 Boggles the mind that we use monospace for everything in emacs. Luckily someone smarter than me put in some time to rectify this.
+
 This activates fixed pitch mode, which turns all "text" to variable pitch.
+
 #+begin_src emacs-lisp :tangle yes
 (setq doom-font "FiraCode Nerd Font")
 (setq doom-variable-pitch-font "Roboto")
-(setq-default default-frame-alist '((font . "Roboto")))
+(setq default-frame-alist '((font . "Roboto")
+                             (internal-border-width 12)
+                             (vertical-scroll-bars nil)))
 #+end_src
 
 Love my little floating man
+
 #+begin_src emacs-lisp :tangle yes
 (vertico-posframe-mode 1)
 #+end_src
 
 Make ~which-key~ a bit faster
+
 #+begin_src emacs-lisp :tangle yes
 (setq which-key-idle-delay 0.4)
 #+end_src
 
 Remove ~evil~ prefix from a lot of things (thanks tecosaur 🙂)
+
 #+begin_src emacs-lisp :tangle yes
 (setq which-key-allow-multiple-replacements t)
 (after! which-key
@@ -105,12 +114,15 @@ Remove ~evil~ prefix from a lot of things (thanks tecosaur 🙂)
 
 
 ** Info colors
+
 #+begin_src emacs-lisp :tangle yes
 (add-hook 'Info-selection-hook 'info-colors-fontify-mode)
 #+end_src
 
 ** Marginalia
+
 Once again, thanks teco
+
 #+begin_src emacs-lisp :tangle yes
 (after! marginalia
   (setq marginalia-censor-variables nil)
@@ -149,6 +161,7 @@ Once again, thanks teco
 
 
 ** Centaur tabs shenanigans
+
 #+begin_src emacs-lisp :tangle yes
 (after! centaur-tabs
   (centaur-tabs-mode -1)
@@ -167,12 +180,156 @@ Once again, thanks teco
 My love
 
 It's so good, but make sure to use the fringes for the margins!
+
 #+begin_src emacs-lisp :tangle yes
-(setq olivetti-style 'fancy)
+;(setq olivetti-style 'fancy)
 #+end_src
 
 But doom sets the colors of the fringes to a solair one, needs to be fixed.
+
 #+begin_src emacs-lisp :tangle yes
 (add-hook! 'solaire-mode-hook
   (set-face-attribute 'fringe nil :background (face-background 'solaire-default-face)))
+#+end_src
+
+
+* Org-Mode
+
+Org-mode is pretty cool, but I have a loooooooot of small things I would like to have different.
+
+** Small tweaks
+
+*** Company mode
+
+I'm not a big fan of company mode in org-mode, I've never wanted to have a word autocomplete when I'm typing prose, certainly not the random words that happen when typing in org-mode.
+Also it will autocomplete words when typing in code blocks, which is rarely helpful.
+
+#+begin_src emacs-lisp :tangle yes
+(add-hook! org-mode-hook (company-mode -1))
+#+end_src
+
+** Org-Roam
+
+#+begin_src emacs-lisp :tangle yes
+(setq org-roam-directory "~/Notes")
+(setq org-directory "~/Notes")
+#+end_src
+
+*** Org-roam-ui
+
+My bb.
+It's of course perfectly configured already so there's nothing to change.
+#+begin_src emacs-lisp :tangle yes
+(use-package! org-roam-ui
+  :after org-roam)
+#+end_src
+
+* Looks
+
+** General
+*** Theme
+
+#+begin_src emacs-lisp :tangle yes
+(setq doom-theme 'doom-flatwhite)
+#+end_src
+
+*** Olivetti
+
+I would like most non-prog buffers to have some more spacing.
+
+#+begin_src emacs-lisp :tangle yes
+(use-package! olivetti
+  :hook (text-mode . olivetti-mode)
+  :config)
+
+#+end_src
+
+*** Tooltips
+
+Emacs actually has built in tooltips! You can just hover over things and then see what it means etc, wayyy more useful than the lower left corner.
+
+#+begin_src emacs-lisp :tangle yes
+(tooltip-mode 1)
+#+end_src
+
+** Org mode
+
+*** Indentation
+
+No indentation! It's ass.
+#+begin_src emacs-lisp :tangle yes
+(after! org
+  (setq org-startup-indented nil))
+#+end_src
+
+*** Latex
+
+I want the LaTeX previews to be there when I enter a file.
+#+begin_src emacs-lisp :tangle yes
+(after! org (setq org-startup-with-latex-preview t))
+#+end_src
+
+*** Org modern
+
+Finally a standardized nice look for org
+
+#+begin_src emacs-lisp :tangle yes
+(use-package! org-modern
+:hook (org-mode . org-modern-mode)
+:config (setq org-modern-hide-stars t))
+#+end_src
+
+*** Mixed pitch
+
+This is text to be read, it shouldn't be in fixed-pitch! Looks like ass!
+Sadly, mixed-pitch-mode does not seem to change this automatically.
+
+
+#+begin_src emacs-lisp :tangle yes
+(add-hook! 'org-mode-hook (mixed-pitch-mode 1))
+#+end_src
+
+*** Olivetti
+
+I want chapters to be centered.
+
+#+begin_src emacs-lisp :tangle yes
+(defun thomas/check-tag (tag)
+  "Check whether current file-level note has a certain tag."
+  (when (org-roam-file-p)
+  (let* ((file-level-node
+          (save-excursion
+            (org-with-wide-buffer
+            (buffer-end -1)
+            (org-roam-node-at-point))))
+         (file-tags (org-roam-node-tags file-level-node)))
+    (if (seq-contains-p file-tags tag)
+        t
+      nil))))
+
+(defun thomas/check-chapter-note ()
+  "Check if current note is a chapter."
+  (thomas/check-tag "chapter"))
+
+(defun thomas/olivetti-if-chapter ()
+  "Activate olitevetti mode if the current note is a chapter."
+  (when (and (thomas/check-chapter-note))
+    (setq-local olivetti-style 'fancy)
+    (olivetti-mode 1)))
+
+
+#+end_src
+
+#+begin_src emacs-lisp :tangle yes
+(add-hook 'org-mode-hook #'thomas/olivetti-if-chapter)
+#+end_src
+
+
+
+*** Line-numbers
+
+No line numbers! I'm writing, I don't need to know where things are.
+
+#+begin_src emacs-lisp :tangle yes
+(add-hook! 'org-mode-hook (display-line-numbers-mode -1))
 #+end_src
